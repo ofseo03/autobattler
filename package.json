@@ -1,0 +1,12 @@
+{
+  "name": "career-autobattler",
+  "version": "0.1.0",
+  "private": true,
+  "description": "커리어 오토배틀러 (야구) — 게임 로직 엔진",
+  "scripts": {
+    "test": "node tests/run.js",
+    "balance": "node scripts/balance.js 30",
+    "bundle": "node scripts/bundle.js"
+  },
+  "license": "MIT"
+}
