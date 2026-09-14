@@ -4,10 +4,9 @@
 
 플레이: `https://<user>.github.io/career-autobattler/` (GitHub Pages 배포 후 링크 교체)
 
-![](docs/screenshot.png)
-<!-- TODO: 배치 화면 스크린샷을 docs/screenshot.png 에 넣을 것 -->
+![배치 화면 — 벤치 선수를 3번 칸에 놓는 미리보기. 초록은 새로 발동, 빨강은 해제되는 시너지](docs/screenshot.png)
 
-> **현재 브랜치(`backend`)에는 게임 로직 엔진만 들어 있다.** `index.html`(화면·입력·패닉 모드)은 프론트엔드 작업에서 `src/*.js` 를 그대로 `<script>` 로 포함해 완성한다. 아래 "엔진 구조" 참고.
+> `index.html` 한 파일이 제품 전체다. 화면·입력·패닉 모드 코드가 들어 있고, `src/*.js` 엔진은 `node scripts/bundle.js index.html` 로 `<!-- engine:start -->` / `<!-- engine:end -->` 사이에 결합된다. 엔진을 고쳤으면 이 명령을 다시 실행한다. 아래 "엔진 구조" 참고.
 
 ---
 
