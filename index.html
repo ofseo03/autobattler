@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>시즌 기록부</title>
+  <link id="favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23f7f7f5'/%3E%3Crect x='3' y='3' width='10' height='10' fill='none' stroke='%2377776f'/%3E%3C/svg%3E">
+  <style>
+    /* ── 기본 ───────────────────────────────────────────────── */
+    :root {
+      --bg: #f7f7f5; --card: #ffffff; --line: #e0e0dd; --text: #2b2b2b; --muted: #77776f;
+      --accent: #4a6fa5; --good: #3d7a4e; --bad: #a04a42; --good-bg: #eef4ef; --bad-bg: #f6eceb; --hover: #f1f1ee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); }
+    body { font: 14px/1.5 system-ui, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-variant-numeric: tabular-nums; padding: 16px; }
+    #app { max-width: 1000px; margin: 0 auto; }
+    h1, h2, h3 { font-weight: 600; margin: 0; }
+    h1 { font-size: 18px; } h2 { font-size: 15px; } h3 { font-size: 13px; color: var(--muted); text-transform: none; }
+    p { margin: 0; }
+    button { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 3px; padding: 4px 10px; cursor: pointer; transition: background 120ms; }
+    button:hover:not(:disabled) { background: var(--hover); }
+    button:disabled { color: var(--muted); cursor: default; opacity: .6; }
+    button.primary { border-color: var(--accent); color: var(--accent); }
+    button.primary:hover:not(:disabled) { background: #eef2f8; }
+    button:focus-visible, [tabindex]:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    input[type=text] { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--card); color: var(--text); width: 100%; max-width: 240px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 500; font-size: 12px; }
+    td.num, th.num { text-align: right; }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+    .good { color: var(--good); } .bad { color: var(--bad); } .accent { color: var(--accent); }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .stack { display: flex; flex-direction: column; gap: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 3px; padding: 10px 12px; }
+    .topbar { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; padding: 8px 0 10px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+    .topbar .k { color: var(--muted); font-size: 12px; margin-right: 4px; }
+    .notice { font-size: 13px; color: var(--muted); padding: 6px 10px; border: 1px dashed var(--line); border-radius: 3px; background: var(--card); }
+    .wrap { overflow-x: auto; }
+    kbd { font: 11px/1 system-ui, sans-serif; border: 1px solid var(--line); border-radius: 3px; padding: 1px 4px; background: var(--card); color: var(--muted); }
+
+    /* ── 선수 카드(축약) ─────────────────────────────────────── */
+    .pc { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; }
+    .pc .name { font-weight: 600; }
+    .pc .meta { color: var(--muted); font-size: 12px; }
+    .tags { font-size: 12px; }
+    .tags span { border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; margin-right: 3px; white-space: nowrap; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 8px; font-size: 12px; }
+    .stats b { font-weight: 600; font-size: 14px; display: block; }
+    .stats .lbl { color: var(--muted); }
+    .stats .up { color: var(--good); }
+    .stats .down { color: var(--bad); }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+    .cards .card { display: flex; flex-direction: column; gap: 6px; }
+    .cards .card .spacer { flex: 1; }
+
+    /* ── 드래프트 ───────────────────────────────────────────── */
+    .choices { display: flex; flex-wrap: wrap; gap: 6px; }
+    .choices button.on { border-color: var(--accent); color: var(--accent); background: #eef2f8; }
+    .alloc { display: grid; grid-template-columns: repeat(4, minmax(60px, 1fr)); gap: 8px; max-width: 420px; }
+
+    /* ── 배치 ───────────────────────────────────────────────── */
+    .lineup-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; align-items: start; }
+    @media (max-width: 720px) { .lineup-grid { grid-template-columns: 1fr; } }
+    .slots { display: flex; flex-direction: column; gap: 4px; }
+    .slot { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 3px; padding: 6px 8px; min-height: 46px; cursor: grab; transition: background 120ms, border-color 120ms; }
+    .slot .no { color: var(--muted); font-size: 12px; }
+    .slot.empty { color: var(--muted); border-style: dashed; cursor: default; }
+    .slot.cursor, .bench-item.cursor, .bench-zone.cursor { border-color: var(--accent); }
+    .slot.held, .bench-item.held { background: #eef2f8; border-color: var(--accent); }
+    .slot.over, .bench-item.over, .bench-zone.over { background: var(--hover); border-color: var(--accent); }
+    .slot.me .name::after { content: ' (나)'; color: var(--accent); font-weight: 500; }
+    .slot.cleanup { border-left: 3px solid var(--line); }
+    .slot .mini { display: flex; gap: 8px; font-size: 12px; color: var(--muted); }
+    .slot .mini b { color: var(--text); font-weight: 500; }
+    .bench { display: flex; flex-direction: column; gap: 4px; }
+    .bench-item { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 3px; padding: 6px 8px; cursor: grab; }
+    .bench-zone { border: 1px dashed var(--line); border-radius: 3px; padding: 6px 8px; color: var(--muted); font-size: 12px; text-align: center; }
+    .syn-list { display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+    .syn-list .item { display: grid; grid-template-columns: 1fr; padding: 3px 6px; border-radius: 3px; border-left: 3px solid var(--line); }
+    .syn-list .item .d { color: var(--muted); font-size: 12px; }
+    .syn-list .item.add { border-left-color: var(--good); background: var(--good-bg); }
+    .syn-list .item.add .n::before { content: '+ '; color: var(--good); }
+    .syn-list .item.rem { border-left-color: var(--bad); background: var(--bad-bg); text-decoration: line-through; }
+    .syn-list .item.rem .n::before { content: '− '; color: var(--bad); text-decoration: none; }
+    .cleanup-meter { font-size: 13px; }
+    .cleanup-meter b { font-size: 16px; }
+
+    /* ── 경기 로그 ──────────────────────────────────────────── */
+    .log { font-size: 13px; line-height: 1.7; min-height: 200px; white-space: pre-wrap; }
+    .log .syn { color: var(--good); }
+    .log .opp { color: var(--muted); }
+    .log .end { font-weight: 600; margin-top: 6px; }
+
+    /* ── 결과 / 은퇴 ───────────────────────────────────────── */
+    .kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; }
+    .kv .k { color: var(--muted); }
+    .growth { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+    .growth button { padding: 10px; text-align: left; }
+    .growth button .key { color: var(--muted); font-size: 12px; display: block; }
+
+    /* ── 패닉 모드 ─────────────────────────────────────────── */
+    #panic { position: fixed; inset: 0; background: #ffffff; color: #111; overflow-y: auto; z-index: 10; }
+    #panic .doc { max-width: 760px; margin: 0 auto; padding: 48px 24px 120px; font: 15px/1.8 'Malgun Gothic', 'Apple SD Gothic Neo', system-ui, sans-serif; }
+    #panic h1 { font-size: 22px; margin: 0 0 4px; font-weight: 700; }
+    #panic h2 { font-size: 17px; margin: 28px 0 8px; font-weight: 700; }
+    #panic p { margin: 0 0 12px; text-align: justify; }
+    #panic .sub { color: #555; font-size: 13px; margin-bottom: 24px; }
+    #panic ul { margin: 0 0 12px 20px; padding: 0; }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="panic" hidden></div>
+
+  <!-- engine:start -->
+<script>
+// ── 1. 상수: 태그, 포지션, 시너지 테이블, 이름 풀
+// 밸런스 수치는 전부 이 파일에 모여 있다. (README "밸런스 수치 수정 위치" 참고)
+(function (root) {
+  'use strict';
+  var AB = root.AB || (root.AB = {});
+  var C = {};
+
+  C.VERSION = 1;
+  C.STORAGE_KEY = 'season_record_v1';      // localStorage 키 (눈에 안 띄는 이름)
+  C.RANKING_KEY = 'season_record_rank_v1';
+
+  C.SEASONS = 8;
+  C.LINEUP_SIZE = 9;
+
+  // 3.2 태그 — 정확히 8종. 늘리지 말 것.
+  C.TAGS = ['교타자', '거포', '발야구', '수비형', '베테랑', '신예', '클러치', '출루형'];
+  C.POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
+  C.STATS = ['power', 'contact', 'speed', 'defense'];
+  C.STAT_LABEL = { power: '장타력', contact: '정확도', speed: '주력', defense: '수비' };
+
+  // 태그별 주 능력치. 'all' = 전체 소폭, 'growth' = 성장률
+  C.TAG_MAIN_STAT = {
+    '교타자': 'contact', '거포': 'power', '발야구': 'speed', '수비형': 'defense',
+    '출루형': 'contact', '클러치': 'power', '베테랑': 'all', '신예': 'growth'
+  };
+  C.VETERAN_ALL_FACTOR = 0.4; // 베테랑 '전체 소폭' = 보너스의 40%를 4스탯 전부에
+
+  // 4.1 런 — 연속 칸. 길이 5 이상은 5 항목 사용
+  C.RUN = {
+    3: { name: '소규모 런', bonus: 0.18 },
+    4: { name: '중규모 런', bonus: 0.28 },
+    5: { name: '대규모 런', bonus: 0.40, morale: 1 }
+  };
+  // 4.2 세트 — 같은 태그, 서로 다른 포지션. 타순 무관
+  C.SET = [
+    { count: 3, bonus: 0.10 },
+    { count: 5, bonus: 0.20 },
+    { count: 7, bonus: 0.32 }
+  ];
+  // 4.3 인접 조합 — from 이 바로 앞, to 가 바로 뒤
+  C.ADJACENT = [
+    { from: '출루형', to: '거포', name: '밥상과 해결사', effect: 'rbi', value: 0.40, desc: '뒤 선수 타점 +40%' },
+    { from: '발야구', to: '교타자', name: '히트앤런', effect: 'steal', value: 0.35, desc: '앞 선수 도루 성공률 +35%' },
+    { from: '거포', to: '거포', name: '연속 대포', effect: 'cannon', xbh: 0.15, k: 0.10, desc: '둘 다 장타 +15%, 삼진 +10%' },
+    { from: '베테랑', to: '신예', name: '사수와 후임', effect: 'growth', value: 0.25, desc: '뒤 선수 성장률 +25%' }
+  ];
+  C.CLUTCH_SLOT = { slot: 3, tag: '클러치', name: '해결사', value: 0.30, desc: '득점권 상황 보정 +30%' };
+  // 4.4 클린업 트리오 — 3·4·5번 (index 2,3,4) 기본 power 합
+  C.CLEANUP = { slots: [2, 3, 4], threshold: 200, name: '클린업 트리오', bonus: 0.15, desc: '팀 득점 +15%' };
+  C.MORALE_BONUS = 0.02; // 팀 사기 1당 안타 확률 +2%
+
+  // 5.5 노화. 27세 피크
+  C.AGING = {
+    peak: 27,
+    growth: [{ maxAge: 23, gain: 2 }, { maxAge: 26, gain: 1 }],   // 젊은 선수 자연 성장
+    decline: [{ from: 28, to: 30, drop: 2 }, { from: 31, to: 33, drop: 4 }, { from: 34, to: 99, drop: 7 }],
+    floor: 20
+  };
+
+  // 5.1 드래프트
+  C.DRAFT = {
+    totalPoints: 200,
+    tagWeight: 0.6,        // 선택 태그 주 능력치 가중
+    startAge: 21, rookieAge: 19, veteranAge: 25,
+    roundWeights: [0.15, 0.2, 0.3, 0.2, 0.15],
+    rounds: [
+      { round: 1, budget: 56, fame: 50 },
+      { round: 2, budget: 53, fame: 40 },
+      { round: 3, budget: 50, fame: 30 },
+      { round: 4, budget: 48, fame: 22 },
+      { round: 5, budget: 46, fame: 15 }
+    ]
+  };
+
+  // 5.2 영입
+  C.SHOP = { cards: 5, rerolls: 2, extraRerollCost: 3, releaseRefund: 0.5, budgetPerFame: 1 / 5 };
+
+  // 카드 생성 — 명성 → 카드 품질
+  C.CARD = {
+    baseQuality: 45, qualityPerFame: 0.13, qualitySd: 7, qualityMin: 32, qualityMax: 84,
+    statSd: 11, tagStatBonus: 10, statMin: 20, statMax: 99,
+    salaryPerPoint: 0.4, salaryBase: 38, salaryMin: 1,
+    rookieAge: [20, 24], veteranAge: [31, 36], normalAge: [23, 31]
+  };
+
+  // 5.4 시즌 / 리그
+  C.SEASON = {
+    games: 144, teams: 10,
+    leagueGrowth: 0.01,         // 시즌당 상대 전력 상승
+    fameStrength: 0.0003,       // 명성 1당 상대 전력 +0.08% (유명해질수록 상대도 강해진다)
+    otherTeamSd: 0.065,         // 다른 9팀 승률 편차
+    oppRunsBase: 2.95,          // 상대 평균 득점 (수비 55 기준)
+    defenseFactor: 0.006,       // 수비 1점당 상대 득점 -0.6%
+    simSamples: 60,             // 시즌 추정에 쓰는 빠른 시뮬 횟수
+    showcaseWeight: 0.05,       // 관전 경기 결과 반영 비율
+    noise: 0.07,                // 시즌 성적 난수 폭
+    leader: { avgContact: [106, 5, 0.6], hr: [42, 6], rbi: [120, 12], sb: [50, 8] } // avgContact: [기준 정확도, 편차, 시즌당 상승]
+  };
+  C.FAME = { champion: 25, top3: 8, perTitle: 8, perRank: 2 };  // perRank × (10 - 순위)
+
+  // 5.5 성장 선택
+  C.GROWTH = { single: 8, dualA: 6, dualB: 4, all: 3, tagSwapUntilSeason: 6, softCap: 90 }; // softCap 이상은 성장치 절반
+
+  // 5.6 명예의 전당
+  C.HOF = {
+    weights: { hits: 1, hr: 4, rbi: 2, titles: 150, champs: 300 },
+    grades: [
+      { min: 6000, name: '만장일치 입성' },
+      { min: 4500, name: '입성' },
+      { min: 3200, name: '후보' },
+      { min: 0, name: '미달' }
+    ],
+    rankingSize: 10
+  };
+
+  // 경기 시뮬 확률 모델 (5.4)
+  C.SIM = {
+    paPerGame: [4.7, 4.6, 4.5, 4.4, 4.3, 4.2, 4.1, 4.0, 3.9],
+    walkBase: 0.045, walkPerContact: 0.0009, walkMin: 0.03, walkMax: 0.14, obpTagWalk: 0.035,
+    kBase: 0.30, kPerContact: 0.0025, kMin: 0.07, kMax: 0.32,
+    hitBase: 0.12, hitCurve: 0.26, hitExp: 1.5, hitMax: 0.40, hitCap: 0.42, // hitCap: 상황 보정까지 합친 상한   // hit = base + (contact/100)^exp × curve
+    hrBase: 0.015, hrPerPower: 0.0023, hrMax: 0.40,
+    dbBase: 0.14, dbPerPower: 0.0012,
+    trPerSpeed: 0.0004, trMax: 0.06,
+    stealAttemptDiv: 200, stealAttemptMax: 0.5, stealBase: 0.45, stealPerSpeed: 0.0045, stealMax: 0.95,
+    kHitPenalty: 0.5,      // 삼진 +10% → 안타 -5%
+    rbiHitFactor: 0.5,     // 타점 +40% → 주자 있을 때 안타 +20%
+    dpChance: 0.12, sacFlyChance: 0.30,
+    logMax: 30, logMin: 18
+  };
+
+  // 이름 풀
+  C.NAMES = {
+    last: ['김', '이', '박', '최', '정', '강', '조', '윤', '장', '임', '한', '오', '서', '신', '권', '황', '안', '송', '류', '홍', '전', '고', '문', '양', '손', '배', '백', '허', '유', '남'],
+    first: ['도현', '민준', '서준', '예준', '시우', '하준', '주원', '지호', '지훈', '준서', '건우', '현우', '우진', '선우', '서진', '민재', '현준', '연우', '유준', '정우',
+      '승우', '승현', '시윤', '준혁', '은우', '지환', '승민', '지우', '유찬', '윤우', '민성', '준영', '시후', '진우', '지원', '수현', '재윤', '태윤', '한결', '동현',
+      '성민', '재원', '영호', '상현', '태현', '경민', '진호', '용준', '창민', '기현', '대성', '병호', '광현', '형준', '원석', '희수', '정훈', '성훈', '재호', '명수']
+  };
+  C.DEFAULT_PLAYER_NAME = '김도현';
+
+  AB.C = C;
+  if (typeof module !== 'undefined' && module.exports) module.exports = AB;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ── 2. 상태: RNG, state 객체, save/load
+(function (root) {
+  'use strict';
+  var AB = root.AB || (root.AB = {});
+  var C = AB.C;
+
+  // ── 시드 가능한 난수 (mulberry32). 테스트/밸런스 시뮬 재현용
+  var rng = (function () {
+    var s = (Date.now() >>> 0) || 1;
+    function next() {
+      s = (s + 0x6D2B79F5) >>> 0;
+      var t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    return {
+      seed: function (n) { s = (n >>> 0) || 1; },
+      state: function () { return s; },
+      next: next,
+      chance: function (p) { return next() < p; },
+      int: function (a, b) { return a + Math.floor(next() * (b - a + 1)); },       // [a, b]
+      range: function (a, b) { return a + next() * (b - a); },
+      pick: function (arr) { return arr[Math.floor(next() * arr.length)]; },
+      // 근사 정규분포 (평균 0, 표준편차 1)
+      gauss: function () { var u = 0, v = 0; while (u === 0) u = next(); while (v === 0) v = next(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); },
+      shuffle: function (arr) { for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(next() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; },
+      weighted: function (weights) { var r = next() * weights.reduce(function (a, b) { return a + b; }, 0); for (var i = 0; i < weights.length; i++) { r -= weights[i]; if (r < 0) return i; } return weights.length - 1; }
+    };
+  })();
+  AB.rng = rng;
+
+  // ── 저장소: localStorage 가 없으면(테스트/파일 프로토콜 예외) 메모리로 대체
+  var memory = {};
+  var memoryStorage = {
+    getItem: function (k) { return Object.prototype.hasOwnProperty.call(memory, k) ? memory[k] : null; },
+    setItem: function (k, v) { memory[k] = String(v); },
+    removeItem: function (k) { delete memory[k]; }
+  };
+  function defaultStorage() {
+    try { if (typeof localStorage !== 'undefined' && localStorage) { localStorage.getItem('__t'); return localStorage; } } catch (e) { /* 접근 불가 */ }
+    return memoryStorage;
+  }
+
+  var S = { storage: defaultStorage(), memoryStorage: memoryStorage };
+
+  // 3.3 게임 상태 (프롬프트 모델에 저장용 필드를 더한 형태)
+  S.create = function (seed) {
+    if (seed !== undefined) rng.seed(seed);
+    return {
+      version: C.VERSION,
+      seed: seed === undefined ? null : seed,
+      rngState: rng.state(),
+      season: 1,                 // 1-8
+      phase: 'draft',            // draft|shop|lineup|game|result|retired
+      playerId: null,            // 내 선수 id
+      players: {},               // id → 선수 카드 (라인업/벤치/내 선수 전부)
+      lineup: [null, null, null, null, null, null, null, null, null], // 9칸, 선수 id 또는 null
+      bench: [],                 // 영입했지만 안 쓰는 선수 id
+      budget: 0,                 // 연봉 총액 상한
+      fame: 0,                   // 명성 — 상점 카드 등급에 영향
+      rerolls: 0,
+      draftRound: 0,
+      nextId: 1,
+      shop: [],                  // 현재 상점 카드 (아직 영입 안 된 선수 객체)
+      gameResult: null,          // 관전 경기 결과 {log, score, ...}
+      seasonResult: null,        // 시즌 정산 결과
+      growthOptions: null,       // 3지선다
+      career: { games: 0, hits: 0, hr: 0, rbi: 0, sb: 0, ab: 0, avg: 0, titles: 0, champs: 0, seasons: [] },
+      hof: null                  // 은퇴 후 채워짐
+    };
+  };
+
+  S.getPlayer = function (state, id) { return id == null ? null : (state.players[id] || null); };
+  S.lineupPlayers = function (state) { return state.lineup.map(function (id) { return S.getPlayer(state, id); }); };
+  S.benchPlayers = function (state) { return state.bench.map(function (id) { return S.getPlayer(state, id); }); };
+  S.rosterIds = function (state) { return state.lineup.filter(function (id) { return id != null; }).concat(state.bench); };
+  S.payroll = function (state) {
+    return S.rosterIds(state).reduce(function (sum, id) { var p = state.players[id]; return sum + (p && !p.isPlayer ? p.salary : 0); }, 0);
+  };
+  S.lineupFull = function (state) { return state.lineup.every(function (id) { return id != null; }); };
+
+  S.save = function (state, storage) {
+    var st = storage || S.storage;
+    state.rngState = rng.state();
+    try { st.setItem(C.STORAGE_KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
+  };
+  S.load = function (storage) {
+    var st = storage || S.storage;
+    try {
+      var raw = st.getItem(C.STORAGE_KEY);
+      if (!raw) return null;
+      var state = JSON.parse(raw);
+      if (!state || state.version !== C.VERSION) return null;
+      if (state.rngState) rng.seed(state.rngState);
+      return state;
+    } catch (e) { return null; }
+  };
+  S.clear = function (storage) { try { (storage || S.storage).removeItem(C.STORAGE_KEY); } catch (e) { /* noop */ } };
+
+  S.loadRanking = function (storage) {
+    try { var raw = (storage || S.storage).getItem(C.RANKING_KEY); return raw ? JSON.parse(raw) : []; } catch (e) { return []; }
+  };
+  S.saveRanking = function (list, storage) {
+    try { (storage || S.storage).setItem(C.RANKING_KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
+  };
+  // 랭킹 등재. 상위 rankingSize 개만 유지. 반환: 등재된 순위(1-based) 또는 0
+  S.addRanking = function (entry, storage) {
+    var list = S.loadRanking(storage);
+    list.push(entry);
+    list.sort(function (a, b) { return b.score - a.score || (a.date || '').localeCompare(b.date || ''); });
+    list = list.slice(0, C.HOF.rankingSize);
+    S.saveRanking(list, storage);
+    var idx = list.indexOf(entry);
+    return idx < 0 ? 0 : idx + 1;
+  };
+
+  AB.state = S;
+  if (typeof module !== 'undefined' && module.exports) module.exports = AB;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ── 3. 생성: 선수 카드 랜덤 생성기, 드래프트, 노화, 성장 선택지
+(function (root) {
+  'use strict';
+  var AB = root.AB || (root.AB = {});
+  var C = AB.C, rng = AB.rng;
+  var G = {};
+
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function round(v) { return Math.round(v); }
+
+  G.randomName = function () { return rng.pick(C.NAMES.last) + rng.pick(C.NAMES.first); };
+  G.hasTag = function (p, tag) { return !!p && p.tags.indexOf(tag) >= 0; };
+  G.overall = function (p) { return (p.power + p.contact + p.speed + p.defense) / 4; };
+  G.salaryFor = function (p) { return Math.max(C.CARD.salaryMin, round((G.overall(p) - C.CARD.salaryBase) * C.CARD.salaryPerPoint)); };
+
+  function pickTags(n) {
+    var pool = C.TAGS.slice(), out = [];
+    while (out.length < n) { out.push(pool.splice(Math.floor(rng.next() * pool.length), 1)[0]); }
+    return out;
+  }
+  function ageForTags(tags) {
+    var r = G.hasTag({ tags: tags }, '신예') ? C.CARD.rookieAge : G.hasTag({ tags: tags }, '베테랑') ? C.CARD.veteranAge : C.CARD.normalAge;
+    return rng.int(r[0], r[1]);
+  }
+
+  // 3.1 선수 카드 — 명성이 높을수록 품질 상승
+  G.makeCard = function (fame, id, opts) {
+    opts = opts || {};
+    var K = C.CARD;
+    var q = clamp(K.baseQuality + fame * K.qualityPerFame + rng.gauss() * K.qualitySd, K.qualityMin, K.qualityMax);
+    var tags = opts.tags || pickTags(2);
+    var p = { id: id, name: opts.name || G.randomName(), age: 0, position: opts.position || rng.pick(C.POSITIONS), tags: tags, isPlayer: false };
+    C.STATS.forEach(function (s) { p[s] = q + rng.gauss() * K.statSd; });
+    tags.forEach(function (t) {
+      var m = C.TAG_MAIN_STAT[t];
+      if (m === 'all') C.STATS.forEach(function (s) { p[s] += K.tagStatBonus * 0.4; });
+      else if (m !== 'growth') p[m] += K.tagStatBonus;
+    });
+    C.STATS.forEach(function (s) { p[s] = clamp(round(p[s]), K.statMin, K.statMax); });
+    p.age = opts.age || ageForTags(tags);
+    p.salary = G.salaryFor(p);
+    return p;
+  };
+
+  // 5.1 드래프트 — 총 200점을 4스탯에 분배, 선택 태그에 가중
+  G.draftStats = function (tags) {
+    var w = { power: 1, contact: 1, speed: 1, defense: 1 };
+    tags.forEach(function (t) {
+      var m = C.TAG_MAIN_STAT[t];
+      if (m === 'all') C.STATS.forEach(function (s) { w[s] += C.DRAFT.tagWeight * 0.25; });
+      else if (m !== 'growth') w[m] += C.DRAFT.tagWeight;
+    });
+    var sum = C.STATS.reduce(function (a, s) { return a + w[s]; }, 0);
+    var stats = {}, used = 0;
+    C.STATS.forEach(function (s, i) {
+      var v = C.DRAFT.totalPoints * w[s] / sum + (i < 3 ? rng.int(-3, 3) : 0);
+      v = round(v);
+      if (i === 3) v = C.DRAFT.totalPoints - used;
+      stats[s] = v; used += v;
+    });
+    return stats;
+  };
+  G.draftAge = function (tags) {
+    if (tags.indexOf('신예') >= 0) return C.DRAFT.rookieAge;
+    if (tags.indexOf('베테랑') >= 0) return C.DRAFT.veteranAge;
+    return C.DRAFT.startAge;
+  };
+  G.makePlayerCard = function (id, name, position, tags) {
+    var stats = G.draftStats(tags);
+    var p = { id: id, name: name || C.DEFAULT_PLAYER_NAME, age: G.draftAge(tags), position: position, tags: tags.slice(), isPlayer: true, salary: 0 };
+    C.STATS.forEach(function (s) { p[s] = stats[s]; });
+    return p;
+  };
+  // 1~5라운드 랜덤 지명. 낮은 라운드일수록 예산·명성 높음
+  G.draftRound = function () { return C.DRAFT.rounds[rng.weighted(C.DRAFT.roundWeights)]; };
+
+  // 5.2 상점 카드 5장
+  G.shopCards = function (state) {
+    var cards = [];
+    for (var i = 0; i < C.SHOP.cards; i++) cards.push(G.makeCard(state.fame, 'c' + state.nextId++));
+    return cards;
+  };
+
+  // 5.5 노화 — 전 선수 나이 +1. 27세 피크, 이후 하락. 젊으면 자연 성장
+  G.ageOne = function (p) {
+    p.age += 1;
+    var delta = 0;
+    C.AGING.decline.forEach(function (r) { if (p.age >= r.from && p.age <= r.to) delta = -r.drop; });
+    if (delta === 0) C.AGING.growth.forEach(function (r) { if (delta === 0 && p.age <= r.maxAge) delta = r.gain; });
+    C.STATS.forEach(function (s) { p[s] = clamp(p[s] + delta, C.AGING.floor, C.CARD.statMax); });
+    if (!p.isPlayer) p.salary = G.salaryFor(p);
+    return delta;
+  };
+
+  // 5.5 내 선수 성장 — 3지선다. growthMul: 시너지(신예 런/세트, 사수와 후임) 반영
+  G.growthOptions = function (player, season, growthMul) {
+    var mul = 1 + (growthMul || 0);
+    var main = [];
+    player.tags.forEach(function (t) { var m = C.TAG_MAIN_STAT[t]; if (m !== 'all' && m !== 'growth' && main.indexOf(m) < 0) main.push(m); });
+    var s1 = main.length ? rng.pick(main) : rng.pick(C.STATS);
+    var others = C.STATS.filter(function (s) { return s !== s1; });
+    var s2 = rng.pick(others), s3 = rng.pick(others.filter(function (s) { return s !== s2; }));
+    var opts = [
+      { type: 'stat', gains: [{ stat: s1, value: round(C.GROWTH.single * mul) }] },
+      { type: 'stat', gains: [{ stat: s2, value: round(C.GROWTH.dualA * mul) }, { stat: s3, value: round(C.GROWTH.dualB * mul) }] }
+    ];
+    var candidates = C.TAGS.filter(function (t) { return player.tags.indexOf(t) < 0; });
+    if (season <= C.GROWTH.tagSwapUntilSeason && candidates.length && rng.chance(0.6)) {
+      opts.push({ type: 'tag', add: rng.pick(candidates), remove: rng.pick(player.tags) });
+    } else {
+      opts.push({ type: 'stat', gains: C.STATS.map(function (s) { return { stat: s, value: round(C.GROWTH.all * mul) }; }) });
+    }
+    opts.forEach(function (o) { o.label = G.growthLabel(o); });
+    return opts;
+  };
+  G.growthLabel = function (o) {
+    if (o.type === 'tag') return "새 태그 '" + o.add + "' 획득 ('" + o.remove + "' 대체)";
+    return o.gains.map(function (g) { return C.STAT_LABEL[g.stat] + ' +' + g.value; }).join(', ');
+  };
+  G.applyGrowth = function (player, o) {
+    if (o.type === 'tag') {
+      var idx = player.tags.indexOf(o.remove);
+      if (idx >= 0) player.tags[idx] = o.add; else player.tags[1] = o.add;
+    } else {
+      o.gains.forEach(function (g) { var v = player[g.stat] >= C.GROWTH.softCap ? Math.ceil(g.value / 2) : g.value; player[g.stat] = clamp(player[g.stat] + v, C.AGING.floor, C.CARD.statMax); });
+    }
+    return player;
+  };
+
+  AB.gen = G;
+  if (typeof module !== 'undefined' && module.exports) module.exports = AB;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ── 4. 시너지: 런/세트/인접/클린업 판정 엔진 ← 순수 함수
+// 입력: lineup (길이 9, 선수 객체 또는 null). 상태·난수 접근 없음.
+// 출력: 발동 시너지 목록 + 칸별 능력치 보정 + 팀 보정.
+// 드래그 미리보기는 evaluate()를 가상 배치로 한 번 더 호출해 diff()로 비교한다.
+(function (root) {
+  'use strict';
+  var AB = root.AB || (root.AB = {});
+  var C = AB.C;
+  var SY = {};
+
+  function has(p, tag) { return !!p && p.tags.indexOf(tag) >= 0; }
+  function zeros(n) { var a = []; for (var i = 0; i < n; i++) a.push(0); return a; }
+  function slotLabel(slots) {
+    if (slots.length === 1) return (slots[0] + 1) + '번';
+    var consecutive = slots.every(function (s, i) { return i === 0 || s === slots[i - 1] + 1; });
+    if (consecutive) return (slots[0] + 1) + '~' + (slots[slots.length - 1] + 1) + '번';
+    return slots.map(function (s) { return (s + 1) + '번'; }).join('·');
+  }
+  function pct(v) { return (v > 0 ? '+' : '') + Math.round(v * 100) + '%'; }
+  function mainStatLabel(tag) {
+    var m = C.TAG_MAIN_STAT[tag];
+    return m === 'all' ? '전체 능력치' : m === 'growth' ? '성장률' : C.STAT_LABEL[m];
+  }
+
+  SY.evaluate = function (lineup) {
+    var n = lineup.length;
+    var syn = [];
+    var bonus = lineup.map(function () { return { power: 0, contact: 0, speed: 0, defense: 0 }; });
+    var mods = { growth: zeros(n), rbi: zeros(n), steal: zeros(n), xbh: zeros(n), k: zeros(n), clutch: zeros(n) };
+    var team = { morale: 0, score: 0 };
+
+    function addStat(i, statKey, v) {
+      if (statKey === 'all') C.STATS.forEach(function (s) { bonus[i][s] += v * C.VETERAN_ALL_FACTOR; });
+      else if (statKey === 'growth') mods.growth[i] += v;
+      else bonus[i][statKey] += v;
+    }
+
+    // 4.1 런 — 연속 칸 3개 이상 같은 태그
+    C.TAGS.forEach(function (tag) {
+      var i = 0;
+      while (i < n) {
+        if (!has(lineup[i], tag)) { i++; continue; }
+        var j = i;
+        while (j + 1 < n && has(lineup[j + 1], tag)) j++;
+        var len = j - i + 1;
+        if (len >= 3) {
+          var tier = C.RUN[Math.min(len, 5)];
+          var slots = [];
+          for (var s = i; s <= j; s++) slots.push(s);
+          syn.push({
+            type: 'run', key: 'run:' + tag + ':' + i, tag: tag, slots: slots, level: Math.min(len, 5), bonus: tier.bonus,
+            name: tier.name + ' [' + tag + ']',
+            desc: slotLabel(slots) + ' ' + mainStatLabel(tag) + ' ' + pct(tier.bonus) + (tier.morale ? ', 팀 사기 +' + tier.morale : '')
+          });
+          slots.forEach(function (s) { addStat(s, C.TAG_MAIN_STAT[tag], tier.bonus); });
+          if (tier.morale) team.morale += tier.morale;
+        }
+        i = j + 1;
+      }
+    });
+
+    // 4.2 세트 — 같은 태그, 서로 다른 포지션 3명 이상 (타순 무관)
+    C.TAGS.forEach(function (tag) {
+      var seen = {}, slots = [];
+      lineup.forEach(function (p, i) {
+        if (has(p, tag) && !seen[p.position]) { seen[p.position] = true; slots.push(i); }
+      });
+      var tier = null;
+      C.SET.forEach(function (t) { if (slots.length >= t.count) tier = t; });
+      if (tier) {
+        syn.push({
+          type: 'set', key: 'set:' + tag, tag: tag, slots: slots, level: tier.count, bonus: tier.bonus,
+          name: '세트 [' + tag + ' ×' + tier.count + ']',
+          desc: '팀 전체 ' + mainStatLabel(tag) + ' ' + pct(tier.bonus)
+        });
+        for (var i = 0; i < n; i++) if (lineup[i]) addStat(i, C.TAG_MAIN_STAT[tag], tier.bonus);
+      }
+    });
+
+    // 4.3 인접 조합
+    for (var i = 0; i + 1 < n; i++) {
+      var a = lineup[i], b = lineup[i + 1];
+      if (!a || !b) continue;
+      C.ADJACENT.forEach(function (r) {
+        if (!has(a, r.from) || !has(b, r.to)) return;
+        syn.push({ type: 'adj', key: 'adj:' + r.name + ':' + i, tag: r.from + '→' + r.to, slots: [i, i + 1], level: 1, name: r.name, desc: slotLabel([i, i + 1]) + ' ' + r.desc });
+        if (r.effect === 'rbi') mods.rbi[i + 1] += r.value;
+        else if (r.effect === 'steal') mods.steal[i] += r.value;
+        else if (r.effect === 'growth') mods.growth[i + 1] += r.value;
+        else if (r.effect === 'cannon') { mods.xbh[i] += r.xbh; mods.xbh[i + 1] += r.xbh; mods.k[i] += r.k; mods.k[i + 1] += r.k; }
+      });
+    }
+    var cs = C.CLUTCH_SLOT;
+    if (has(lineup[cs.slot], cs.tag)) {
+      syn.push({ type: 'adj', key: 'adj:' + cs.name, tag: cs.tag, slots: [cs.slot], level: 1, name: cs.name, desc: (cs.slot + 1) + '번 ' + cs.desc });
+      mods.clutch[cs.slot] += cs.value;
+    }
+
+    // 4.4 클린업 트리오 — 3·4·5번 기본 power 합 (배치 화면에 상시 표시)
+    var cleanupPower = 0, cleanupFull = true;
+    C.CLEANUP.slots.forEach(function (s) { if (lineup[s]) cleanupPower += lineup[s].power; else cleanupFull = false; });
+    var cleanupActive = cleanupFull && cleanupPower >= C.CLEANUP.threshold;
+    if (cleanupActive) {
+      syn.push({ type: 'cleanup', key: 'cleanup', tag: null, slots: C.CLEANUP.slots.slice(), level: 1, name: C.CLEANUP.name, desc: '3·4·5번 장타력 합 ' + cleanupPower + ' — ' + C.CLEANUP.desc });
+      team.score += C.CLEANUP.bonus;
+    }
+
+    // 최종 능력치 = 기본 × (1 + 런 + 세트). 99 를 넘을 수 있다 (시뮬에서 확률로 흡수)
+    var effective = lineup.map(function (p, i) {
+      if (!p) return null;
+      var e = {};
+      C.STATS.forEach(function (s) { e[s] = Math.round(p[s] * (1 + bonus[i][s])); });
+      return e;
+    });
+
+    return { synergies: syn, bonus: bonus, mods: mods, team: team, effective: effective, cleanupPower: cleanupPower, cleanupActive: cleanupActive };
+  };
+
+  // 시너지가 하나도 없는 것으로 간주한 평가 결과 (비교·밸런스용)
+  SY.none = function (lineup) {
+    var n = lineup.length;
+    return {
+      synergies: [], bonus: lineup.map(function () { return { power: 0, contact: 0, speed: 0, defense: 0 }; }),
+      mods: { growth: zeros(n), rbi: zeros(n), steal: zeros(n), xbh: zeros(n), k: zeros(n), clutch: zeros(n) },
+      team: { morale: 0, score: 0 },
+      effective: lineup.map(function (p) { if (!p) return null; var e = {}; C.STATS.forEach(function (s) { e[s] = p[s]; }); return e; }),
+      cleanupPower: 0, cleanupActive: false
+    };
+  };
+
+  // 두 평가 결과 비교 — 미리보기용. 런은 같은 태그·겹치는 칸이면 같은 런으로 본다.
+  SY.diff = function (before, after) {
+    var out = { added: [], removed: [], upgraded: [], downgraded: [], kept: [] };
+    var used = {};
+    function overlap(a, b) { return a.slots.some(function (s) { return b.slots.indexOf(s) >= 0; }); }
+    before.synergies.forEach(function (b) {
+      var match = null;
+      for (var i = 0; i < after.synergies.length; i++) {
+        var a = after.synergies[i];
+        if (used[i] || a.type !== b.type) continue;
+        if (b.type === 'run' ? (a.tag === b.tag && overlap(a, b)) : a.key === b.key) { match = i; break; }
+      }
+      if (match === null) { out.removed.push(b); return; }
+      used[match] = true;
+      var a2 = after.synergies[match];
+      if (a2.level > b.level) out.upgraded.push({ from: b, to: a2 });
+      else if (a2.level < b.level) out.downgraded.push({ from: b, to: a2 });
+      else out.kept.push(a2);
+    });
+    after.synergies.forEach(function (a, i) { if (!used[i]) out.added.push(a); });
+    return out;
+  };
+
+  // 가상 배치 헬퍼 — 원본을 건드리지 않고 두 칸을 바꾼 배열 반환
+  SY.swapped = function (lineup, i, j) { var l = lineup.slice(); var t = l[i]; l[i] = l[j]; l[j] = t; return l; };
+  SY.placed = function (lineup, i, player) { var l = lineup.slice(); l[i] = player; return l; };
+  // 미리보기: 현재 lineup 에서 가상 lineup 으로 바뀔 때의 diff
+  SY.preview = function (lineup, virtualLineup) { return SY.diff(SY.evaluate(lineup), SY.evaluate(virtualLineup)); };
+
+  // 단순 점수 — 배치 비교/AI 용. 발동 시너지 가치의 합
+  SY.score = function (result) {
+    var s = 0;
+    result.effective.forEach(function (e) { if (e) s += e.power * 0.55 + e.contact * 0.9 + e.speed * 0.25 + e.defense * 0.35; });
+    result.synergies.forEach(function (x) {
+      if (x.type === 'adj') s += 12;
+      if (x.type === 'cleanup') s += 30;
+    });
+    s += result.team.morale * 10;
+    return s;
+  };
+
+  AB.synergy = SY;
+  if (typeof module !== 'undefined' && module.exports) module.exports = AB;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ── 5. 시뮬: 경기 시뮬레이션 (텍스트 로그), 시즌 정산, 타이틀, 명예의 전당
+(function (root) {
+  'use strict';
+  var AB = root.AB || (root.AB = {});
+  var C = AB.C, rng = AB.rng, SY = AB.synergy;
+  var K = C.SIM;
+  var SIM = {};
+
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function has(p, tag) { return !!p && p.tags.indexOf(tag) >= 0; }
+
+  // 정확도 → 타율 곡선 (볼록: 높은 정확도일수록 1점의 가치가 크다)
+  SIM.hitProb = function (contact) { return Math.min(K.hitMax, K.hitBase + Math.pow(Math.max(0, contact) / 100, K.hitExp) * K.hitCurve); };
+
+  // 타자별 확률 프로필 — 최종 능력치(런/세트 반영) + 인접 보정으로 계산
+  SIM.profile = function (p, eff, mods, i) {
+    var c = eff.contact, pw = eff.power, sp = eff.speed;
+    return {
+      walk: clamp(K.walkBase + (c - 50) * K.walkPerContact, K.walkMin, K.walkMax) + (has(p, '출루형') ? K.obpTagWalk : 0),
+      k: clamp(K.kBase - c * K.kPerContact, K.kMin, K.kMax) * (1 + mods.k[i]),
+      hit: SIM.hitProb(c) * (1 - mods.k[i] * K.kHitPenalty),
+      hr: clamp(K.hrBase + pw * K.hrPerPower, 0, K.hrMax) * (1 + mods.xbh[i]),
+      db: (K.dbBase + pw * K.dbPerPower) * (1 + mods.xbh[i]),
+      tr: clamp(sp * K.trPerSpeed, 0, K.trMax),
+      stealAttempt: clamp((sp - 55) / K.stealAttemptDiv, 0, K.stealAttemptMax),
+      stealSucc: clamp(K.stealBase + sp * K.stealPerSpeed, 0.3, K.stealMax) * (1 + mods.steal[i]),
+      speed: sp,
+      rbi: mods.rbi[i], clutch: mods.clutch[i]
+    };
+  };
+
+  // 상대 팀 기대 득점/경기 — 내 수비와 시즌 진행(리그 성장)으로 결정
+  SIM.opponentRuns = function (effective, season, strength, fame) {
+    var defs = effective.filter(Boolean).map(function (e) { return e.defense; });
+    var avgDef = defs.length ? defs.reduce(function (a, b) { return a + b; }, 0) / defs.length : 50;
+    var league = 1 + (season - 1) * C.SEASON.leagueGrowth + (fame || 0) * C.SEASON.fameStrength;
+    return C.SEASON.oppRunsBase * league * (strength || 1) * (1 - (avgDef - 55) * C.SEASON.defenseFactor);
+  };
+  function poisson(lambda) {
+    var L = Math.exp(-lambda), k = 0, p = 1;
+    do { k++; p *= rng.next(); } while (p > L);
+    return k - 1;
+  }
+
+  function emptyStat() { return { pa: 0, ab: 0, h: 0, db: 0, tr: 0, hr: 0, rbi: 0, bb: 0, k: 0, sb: 0, cs: 0, r: 0 }; }
+  var HIT_SPOTS = ['좌전', '중전', '우전', '좌중간', '우중간', '3유간', '1·2루간'];
+  var HR_SPOTS = ['좌측 담장을 넘기는', '우측 담장을 넘기는', '중앙 담장을 넘기는', '비거리 125m'];
+
+  // 한 경기 시뮬. lineup: 선수 9명(전부 채워져 있어야 함). syn: SY.evaluate(lineup)
+  // opts.log=false 면 로그 없이 통계만 (시즌 추정용 빠른 시뮬)
+  SIM.playGame = function (lineup, syn, season, opts) {
+    opts = opts || {};
+    var withLog = opts.log !== false;
+    var prof = lineup.map(function (p, i) { return SIM.profile(p, syn.effective[i], syn.mods, i); });
+    var stats = lineup.map(emptyStat);
+    var oppLambda = SIM.opponentRuns(syn.effective, season, opts.strength, opts.fame) / 9;
+    var log = [], my = 0, opp = 0, batter = 0, triggers = {};
+    var morale = 1 + syn.team.morale * C.MORALE_BONUS;
+    var slotName = function (i) { return lineup[i].name + '(' + (i + 1) + '번)'; };
+
+    function push(inning, half, text, pri) { if (withLog) log.push({ inning: inning, half: half, text: inning + '회' + half + ' ' + text, pri: pri || 1 }); }
+    function trigger(inning, name, text) {
+      triggers[name] = (triggers[name] || 0) + 1;
+      push(inning, '말', '시너지 [' + name + '] 발동 — ' + text, 3);
+    }
+
+    for (var inning = 1; inning <= 9; inning++) {
+      // 초: 상대 공격
+      var oppRuns = poisson(oppLambda);
+      if (oppRuns > 0) { opp += oppRuns; push(inning, '초', '상대 팀 ' + oppRuns + '득점', 2); }
+
+      // 말: 내 팀 공격 (9회초 종료 시 앞서 있으면 9회말 없음)
+      if (inning === 9 && my > opp) break;
+      var outs = 0, bases = [-1, -1, -1], scored = 0, events = 0;
+      while (outs < 3) {
+        var i = batter, pr = prof[i], st = stats[i], p = lineup[i];
+        var runnersOn = bases[0] >= 0 || bases[1] >= 0 || bases[2] >= 0;
+        var risp = bases[1] >= 0 || bases[2] >= 0;
+        st.pa++;
+        var hitP = pr.hit * morale;
+        var situ = [];
+        if (syn.team.score) { hitP *= 1 + syn.team.score; if (runnersOn) situ.push(C.CLEANUP.name); }
+        if (runnersOn && pr.rbi) { hitP *= 1 + pr.rbi * K.rbiHitFactor; situ.push('밥상과 해결사'); }
+        if (risp && pr.clutch) { hitP *= 1 + pr.clutch; situ.push(C.CLUTCH_SLOT.name); }
+        if (hitP > K.hitCap) hitP = K.hitCap;
+
+        if (rng.chance(pr.walk)) {
+          // 볼넷: 밀어내기
+          st.bb++;
+          var runs = 0;
+          if (bases[0] >= 0) { if (bases[1] >= 0) { if (bases[2] >= 0) { runs++; stats[bases[2]].r++; } bases[2] = bases[1]; } bases[1] = bases[0]; }
+          bases[0] = i;
+          if (runs) { st.rbi += runs; scored += runs; push(inning, '말', slotName(i) + ' — 밀어내기 볼넷, 1타점', 2); events++; }
+          else if (p.isPlayer) { push(inning, '말', slotName(i) + ' — 볼넷 출루', 1); }
+        } else {
+          st.ab++;
+          if (rng.chance(hitP)) {
+            st.h++;
+            var r = rng.next(), kind, runs2 = 0;
+            if (r < pr.hr) kind = 'hr'; else if (r < pr.hr + pr.tr) kind = 'tr'; else if (r < pr.hr + pr.tr + pr.db) kind = 'db'; else kind = '1b';
+            var desc;
+            if (kind === 'hr') {
+              st.hr++; runs2 = 1;
+              for (var b = 0; b < 3; b++) if (bases[b] >= 0) { runs2++; stats[bases[b]].r++; }
+              bases = [-1, -1, -1]; st.r++;
+              desc = rng.pick(HR_SPOTS) + ' ' + (runs2 === 4 ? '만루 홈런' : runs2 === 1 ? '솔로 홈런' : runs2 + '점 홈런');
+            } else if (kind === 'tr') {
+              st.tr++;
+              for (var b2 = 0; b2 < 3; b2++) if (bases[b2] >= 0) { runs2++; stats[bases[b2]].r++; }
+              bases = [-1, -1, i];
+              desc = rng.pick(['우중간', '좌중간']) + ' 3루타' + (runs2 ? ', ' + runs2 + '타점' : '');
+            } else if (kind === 'db') {
+              st.db++;
+              if (bases[2] >= 0) { runs2++; stats[bases[2]].r++; }
+              if (bases[1] >= 0) { runs2++; stats[bases[1]].r++; }
+              var nb = [-1, i, -1];
+              if (bases[0] >= 0) { if (rng.chance(0.4 + prof[bases[0]].speed * 0.004)) { runs2++; stats[bases[0]].r++; } else nb[2] = bases[0]; }
+              bases = nb;
+              desc = rng.pick(['좌중간', '우중간', '좌측 선상', '우측 선상']) + ' 2루타' + (runs2 ? ', ' + runs2 + '타점' : '');
+            } else {
+              var nb1 = [i, -1, -1];
+              if (bases[2] >= 0) { runs2++; stats[bases[2]].r++; }
+              if (bases[1] >= 0) { if (rng.chance(0.5 + prof[bases[1]].speed * 0.003)) { runs2++; stats[bases[1]].r++; } else nb1[2] = bases[1]; }
+              if (bases[0] >= 0) { if (nb1[2] < 0 && rng.chance(prof[bases[0]].speed * 0.002)) nb1[2] = bases[0]; else nb1[1] = bases[0]; }
+              bases = nb1;
+              desc = rng.pick(HIT_SPOTS) + ' 안타' + (runs2 ? ', ' + runs2 + '타점' : '');
+            }
+            st.rbi += runs2; scored += runs2;
+            push(inning, '말', slotName(i) + ' — ' + desc, runs2 || kind === 'hr' || p.isPlayer ? 3 : 1);
+            if (runs2 && situ.length) situ.forEach(function (s) { trigger(inning, s, slotName(i) + ' ' + runs2 + '타점'); });
+            events++;
+          } else {
+            // 아웃
+            if (rng.chance(pr.k)) { st.k++; if (p.isPlayer) push(inning, '말', slotName(i) + ' — 삼진', 1); }
+            else {
+              if (bases[2] >= 0 && outs < 2 && rng.chance(K.sacFlyChance)) {
+                stats[bases[2]].r++; bases[2] = -1; st.rbi++; scored++;
+                push(inning, '말', slotName(i) + ' — 희생플라이, 1타점', 2); events++;
+              } else if (bases[0] >= 0 && outs < 2 && rng.chance(K.dpChance)) {
+                outs++; bases[0] = -1;
+                if (p.isPlayer) push(inning, '말', slotName(i) + ' — 병살타', 1);
+              } else if (p.isPlayer) push(inning, '말', slotName(i) + ' — 범타', 1);
+            }
+            outs++;
+          }
+        }
+        // 도루 시도: 1루 주자, 2루 비어 있음, 2아웃 이하
+        if (outs < 3 && bases[0] >= 0 && bases[1] < 0) {
+          var rr = bases[0], rp = prof[rr];
+          if (rng.chance(rp.stealAttempt)) {
+            if (rng.chance(rp.stealSucc)) {
+              bases[1] = rr; bases[0] = -1; stats[rr].sb++;
+              if (syn.mods.steal[rr]) trigger(inning, '히트앤런', slotName(rr) + ' 도루 성공');
+              else if (lineup[rr].isPlayer) push(inning, '말', slotName(rr) + ' — 2루 도루 성공', 2);
+            } else { bases[0] = -1; stats[rr].cs++; outs++; if (lineup[rr].isPlayer) push(inning, '말', slotName(rr) + ' — 도루 실패', 1); }
+          }
+        }
+        batter = (batter + 1) % lineup.length;
+      }
+      my += scored;
+      if (withLog && events === 0) push(inning, '말', '삼자범퇴', 0);
+    }
+    // 동점이면 연장 한 번으로 결정
+    var extra = false;
+    if (my === opp) {
+      extra = true;
+      if (rng.chance(0.5)) { my++; var hero = rng.int(0, lineup.length - 1); stats[hero].rbi++; stats[hero].h++; stats[hero].ab++; stats[hero].pa++; push(10, '말', slotName(hero) + ' — 끝내기 안타', 3); }
+      else { opp++; push(10, '초', '상대 팀 1득점', 2); }
+    }
+    var win = my > opp;
+    if (withLog) {
+      log.push({ inning: 0, half: '', text: '── 경기 종료 ' + my + ':' + opp + ' ' + (win ? '승리' : '패배') + (extra ? ' (연장)' : ''), pri: 9 });
+      log = SIM.compactLog(log);
+    }
+    return { win: win, my: my, opp: opp, stats: stats, triggers: triggers, log: log.map(function (l) { return l.text; }) };
+  };
+
+  // 로그를 18~30줄로 압축. 우선순위 낮은 줄(평범한 안타·삼자범퇴)부터 제거
+  SIM.compactLog = function (log) {
+    var out = log.slice();
+    var order = [0, 1, 2];
+    for (var oi = 0; oi < order.length && out.length > K.logMax; oi++) {
+      for (var i = out.length - 1; i >= 0 && out.length > K.logMax; i--) if (out[i].pri === order[oi]) out.splice(i, 1);
+    }
+    if (out.length > K.logMax) out = out.slice(0, K.logMax - 1).concat([out[out.length - 1]]);
+    return out;
+  };
+
+  // 시즌 추정: 빠른 시뮬 N회 평균과 관전 경기 결과를 섞어 144경기로 확장
+  SIM.season = function (lineup, syn, season, showcase, opts) {
+    opts = opts || {};
+    var N = opts.samples || C.SEASON.simSamples;
+    var sum = lineup.map(emptyStat), runsFor = 0, runsAgainst = 0, wins = 0;
+    for (var g = 0; g < N; g++) {
+      var r = SIM.playGame(lineup, syn, season, { log: false, strength: opts.strength, fame: opts.fame });
+      runsFor += r.my; runsAgainst += r.opp; wins += r.win ? 1 : 0;
+      r.stats.forEach(function (s, i) { for (var k in s) sum[i][k] += s[k]; });
+    }
+    var w = C.SEASON.showcaseWeight, noise = C.SEASON.noise, G = C.SEASON.games;
+    var players = lineup.map(function (p, i) {
+      var o = {}, luck = 1 + rng.gauss() * noise;   // 선수별 시즌 운
+      for (var k in sum[i]) {
+        var perGame = (1 - w) * sum[i][k] / N + w * showcase.stats[i][k];
+        var f = (k === 'pa' || k === 'ab') ? 1 : luck * (1 + rng.gauss() * noise * 0.4);
+        o[k] = Math.round(perGame * G * f);
+        if (o[k] < 0) o[k] = 0;
+      }
+      if (o.h > o.ab) o.h = o.ab;
+      o.avg = o.ab ? o.h / o.ab : 0;
+      o.games = G;
+      return o;
+    });
+    var rs = ((1 - w) * runsFor / N + w * showcase.my), ra = ((1 - w) * runsAgainst / N + w * showcase.opp);
+    var pyth = Math.pow(rs, 1.83) / (Math.pow(rs, 1.83) + Math.pow(ra, 1.83));
+    var teamWins = clamp(Math.round(G * (pyth + rng.gauss() * 0.035)), 20, G - 10);
+    // 다른 9팀 승수 — 승률 .5 근처, 편차. 합계 보정은 하지 않는다(단순화)
+    var others = [];
+    for (var t = 1; t < C.SEASON.teams; t++) others.push(clamp(Math.round(G * (0.5 + rng.gauss() * C.SEASON.otherTeamSd)), 30, G - 20));
+    var rank = 1 + others.filter(function (x) { return x > teamWins; }).length;
+    return { players: players, teamWins: teamWins, teamLosses: G - teamWins, rank: rank, champion: rank === 1, runsFor: rs, runsAgainst: ra, winPct: pyth };
+  };
+
+  // 개인 타이틀 판정 — 리그 선두 수치를 난수로 만들고 내 선수와 비교
+  SIM.titles = function (mine, season) {
+    var L = C.SEASON.leader, league = 1 + (season - 1) * C.SEASON.leagueGrowth * 0.5;
+    var leaders = {
+      avg: clamp(SIM.hitProb(L.avgContact[0] + rng.gauss() * L.avgContact[1] + (season - 1) * L.avgContact[2]), 0.310, 0.420),
+      hr: Math.round((L.hr[0] + rng.gauss() * L.hr[1]) * league),
+      rbi: Math.round((L.rbi[0] + rng.gauss() * L.rbi[1]) * league),
+      sb: Math.round(L.sb[0] + rng.gauss() * L.sb[1])
+    };
+    var won = [];
+    if (mine.ab >= 400 && mine.avg >= leaders.avg) won.push('타격왕');
+    if (mine.hr >= leaders.hr) won.push('홈런왕');
+    if (mine.rbi >= leaders.rbi) won.push('타점왕');
+    if (mine.sb >= leaders.sb) won.push('도루왕');
+    return { won: won, leaders: leaders };
+  };
+
+  SIM.hofScore = function (career) {
+    var w = C.HOF.weights;
+    return career.hits * w.hits + career.hr * w.hr + career.rbi * w.rbi + career.titles * w.titles + career.champs * w.champs;
+  };
+  SIM.hofGrade = function (score) {
+    for (var i = 0; i < C.HOF.grades.length; i++) if (score >= C.HOF.grades[i].min) return C.HOF.grades[i].name;
+    return C.HOF.grades[C.HOF.grades.length - 1].name;
+  };
+
+  AB.sim = SIM;
+  if (typeof module !== 'undefined' && module.exports) module.exports = AB;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ── 6. 액션: 화면이 호출하는 상태 전이. 모든 액션은 state 를 변경하고 저장한 뒤 반환한다.
+// 실패 시 { ok:false, error:'...' } 를 반환하고 state 는 그대로 둔다.
+(function (root) {
+  'use strict';
+  var AB = root.AB || (root.AB = {});
+  var C = AB.C, S = AB.state, G = AB.gen, SY = AB.synergy, SIM = AB.sim, rng = AB.rng;
+  var A = {};
+
+  function fail(msg) { return { ok: false, error: msg }; }
+  function ok(state, extra) { S.save(state); var r = { ok: true, state: state }; if (extra) for (var k in extra) r[k] = extra[k]; return r; }
+
+  A.newGame = function (seed) { var st = S.create(seed); S.save(st); return st; };
+  A.resume = function () { return S.load(); };
+
+  // 5.1 드래프트 → 시즌 1 영입 화면
+  A.draft = function (state, input) {
+    if (state.phase !== 'draft') return fail('드래프트 단계가 아닙니다');
+    var name = (input.name || '').trim() || C.DEFAULT_PLAYER_NAME;
+    if (C.POSITIONS.indexOf(input.position) < 0) return fail('포지션을 선택하세요');
+    var tags = (input.tags || []).filter(function (t, i, a) { return C.TAGS.indexOf(t) >= 0 && a.indexOf(t) === i; });
+    if (tags.length !== 2) return fail('태그를 정확히 2개 선택하세요');
+    var id = 'me';
+    var me = G.makePlayerCard(id, name.slice(0, 12), input.position, tags);
+    state.players[id] = me;
+    state.playerId = id;
+    var round = G.draftRound();
+    state.draftRound = round.round;
+    state.fame = round.fame;
+    state.budget = round.budget;
+    state.lineup[3] = id;   // 기본 4번 타순. 이후 자유롭게 이동
+    return ok(state, { round: round, player: me, next: A.openShop(state) });
+  };
+
+  A.currentBudget = function (state) { return state.budget; };
+  A.payroll = function (state) { return S.payroll(state); };
+
+  // 5.2 영입 화면 진입 — 카드 5장, 리롤 2회 초기화
+  A.openShop = function (state) {
+    state.phase = 'shop';
+    state.rerolls = C.SHOP.rerolls;
+    state.shop = G.shopCards(state);
+    state.gameResult = null;
+    S.save(state);
+    return state;
+  };
+  A.reroll = function (state) {
+    if (state.phase !== 'shop') return fail('영입 단계가 아닙니다');
+    if (state.rerolls > 0) state.rerolls--;
+    else {
+      if (state.budget - S.payroll(state) < C.SHOP.extraRerollCost) return fail('예산이 부족합니다 (추가 리롤 ' + C.SHOP.extraRerollCost + ')');
+      state.budget -= C.SHOP.extraRerollCost;
+    }
+    state.shop = G.shopCards(state);
+    return ok(state);
+  };
+  // 카드 영입 → 벤치. 예산 초과 불가
+  A.buy = function (state, index) {
+    if (state.phase !== 'shop') return fail('영입 단계가 아닙니다');
+    var card = state.shop[index];
+    if (!card) return fail('카드가 없습니다');
+    if (S.payroll(state) + card.salary > state.budget) return fail('예산 초과 — 연봉 ' + card.salary + ' 영입 불가');
+    state.shop.splice(index, 1);
+    state.players[card.id] = card;
+    state.bench.push(card.id);
+    return ok(state, { player: card });
+  };
+  // 방출 — 벤치/라인업 선수. 연봉 50% 회수(회수분은 예산 상한에 더한다)
+  A.release = function (state, id) {
+    if (state.phase !== 'shop' && state.phase !== 'lineup') return fail('지금은 방출할 수 없습니다');
+    var p = state.players[id];
+    if (!p) return fail('선수가 없습니다');
+    if (p.isPlayer) return fail('내 선수는 방출할 수 없습니다');
+    var li = state.lineup.indexOf(id); if (li >= 0) state.lineup[li] = null;
+    var bi = state.bench.indexOf(id); if (bi >= 0) state.bench.splice(bi, 1);
+    delete state.players[id];
+    var refund = Math.floor(p.salary * C.SHOP.releaseRefund);
+    state.budget += refund;
+    return ok(state, { refund: refund });
+  };
+
+  // 5.3 배치
+  A.openLineup = function (state) {
+    if (state.phase !== 'shop' && state.phase !== 'lineup') return fail('배치 단계로 갈 수 없습니다');
+    state.phase = 'lineup';
+    state.shop = [];
+    return ok(state);
+  };
+  A.backToShop = function (state) {
+    if (state.phase !== 'lineup') return fail('배치 단계가 아닙니다');
+    state.phase = 'shop';
+    if (!state.shop.length) state.shop = G.shopCards(state);
+    return ok(state);
+  };
+  // 두 칸 스왑 (빈 칸 포함)
+  A.swapSlots = function (state, i, j) {
+    if (state.phase !== 'lineup') return fail('배치 단계가 아닙니다');
+    if (i < 0 || j < 0 || i >= C.LINEUP_SIZE || j >= C.LINEUP_SIZE) return fail('잘못된 칸');
+    var t = state.lineup[i]; state.lineup[i] = state.lineup[j]; state.lineup[j] = t;
+    return ok(state);
+  };
+  // 벤치 선수를 칸에 넣기 — 칸에 있던 선수는 벤치로
+  A.benchToSlot = function (state, id, slot) {
+    if (state.phase !== 'lineup') return fail('배치 단계가 아닙니다');
+    var bi = state.bench.indexOf(id);
+    if (bi < 0) return fail('벤치에 없는 선수');
+    if (slot < 0 || slot >= C.LINEUP_SIZE) return fail('잘못된 칸');
+    var prev = state.lineup[slot];
+    state.bench.splice(bi, 1);
+    state.lineup[slot] = id;
+    if (prev != null) state.bench.push(prev);
+    return ok(state);
+  };
+  // 칸의 선수를 벤치로. 내 선수는 불가
+  A.slotToBench = function (state, slot) {
+    if (state.phase !== 'lineup') return fail('배치 단계가 아닙니다');
+    var id = state.lineup[slot];
+    if (id == null) return fail('빈 칸');
+    if (state.players[id].isPlayer) return fail('내 선수는 라인업에서 뺄 수 없습니다');
+    state.lineup[slot] = null;
+    state.bench.push(id);
+    return ok(state);
+  };
+  A.setLineup = function (state, ids) {
+    if (state.phase !== 'lineup') return fail('배치 단계가 아닙니다');
+    if (ids.length !== C.LINEUP_SIZE) return fail('9칸이어야 합니다');
+    var roster = S.rosterIds(state);
+    var seen = {};
+    for (var i = 0; i < ids.length; i++) {
+      if (ids[i] == null) continue;
+      if (roster.indexOf(ids[i]) < 0 || seen[ids[i]]) return fail('잘못된 선수 id');
+      seen[ids[i]] = true;
+    }
+    state.lineup = ids.slice();
+    state.bench = roster.filter(function (id) { return !seen[id]; });
+    return ok(state);
+  };
+  // 현재 라인업 평가 / 미리보기 (렌더에서 직접 호출)
+  A.evaluate = function (state) { return SY.evaluate(S.lineupPlayers(state)); };
+  A.previewSwap = function (state, i, j) { var l = S.lineupPlayers(state); return SY.preview(l, SY.swapped(l, i, j)); };
+  A.previewPlace = function (state, id, slot) { var l = S.lineupPlayers(state); return SY.preview(l, SY.placed(l, slot, state.players[id])); };
+  A.canStart = function (state) { return state.phase === 'lineup' && S.lineupFull(state) && state.lineup.indexOf(state.playerId) >= 0; };
+
+  // 5.4 경기 시작 — 관전 경기 시뮬. 로그는 gameResult.log
+  A.startGame = function (state) {
+    if (!A.canStart(state)) return fail('9칸을 모두 채우고 내 선수를 포함해야 합니다');
+    var lineup = S.lineupPlayers(state);
+    var syn = SY.evaluate(lineup);
+    var game = SIM.playGame(lineup, syn, state.season, { log: true, fame: state.fame });
+    state.phase = 'game';
+    state.gameResult = { log: game.log, win: game.win, my: game.my, opp: game.opp, stats: game.stats, triggers: game.triggers, synergies: syn.synergies.map(function (s) { return s.name; }) };
+    state._showcase = { my: game.my, opp: game.opp, stats: game.stats };
+    return ok(state, { game: game, synergy: syn });
+  };
+
+  // 5.5 결과 — 시즌 정산, 타이틀, 명성, 성장 선택지
+  A.finishGame = function (state) {
+    if (state.phase !== 'game') return fail('경기 단계가 아닙니다');
+    var lineup = S.lineupPlayers(state);
+    var syn = SY.evaluate(lineup);
+    var showcase = state._showcase || { my: state.gameResult.my, opp: state.gameResult.opp, stats: state.gameResult.stats };
+    var season = SIM.season(lineup, syn, state.season, showcase, { fame: state.fame });
+    var mySlot = state.lineup.indexOf(state.playerId);
+    var mine = season.players[mySlot];
+    var titles = SIM.titles(mine, state.season);
+    var fameGain = C.FAME.perRank * (C.SEASON.teams - season.rank) + titles.won.length * C.FAME.perTitle + (season.champion ? C.FAME.champion : season.rank <= 3 ? C.FAME.top3 : 0);
+    state.fame += fameGain;
+    var c = state.career;
+    c.games += mine.games; c.hits += mine.h; c.hr += mine.hr; c.rbi += mine.rbi; c.sb += mine.sb; c.ab += mine.ab;
+    c.avg = c.ab ? c.hits / c.ab : 0;
+    c.titles += titles.won.length; c.champs += season.champion ? 1 : 0;
+    var lineupSnapshot = lineup.map(function (p) { return JSON.parse(JSON.stringify(p)); }); // 그 시즌 라인업 카드 사본 (은퇴 화면용)
+    c.seasons.push({ season: state.season, age: state.players[state.playerId].age, rank: season.rank, wins: season.teamWins, losses: season.teamLosses, champion: season.champion, avg: mine.avg, h: mine.h, hr: mine.hr, rbi: mine.rbi, sb: mine.sb, titles: titles.won.slice(), lineup: lineupSnapshot, synergies: syn.synergies.length });
+    state.seasonResult = { season: state.season, rank: season.rank, wins: season.teamWins, losses: season.teamLosses, champion: season.champion, mine: mine, titles: titles.won, leaders: titles.leaders, fameGain: fameGain, team: season.players, runsFor: season.runsFor, runsAgainst: season.runsAgainst };
+    state.growthOptions = G.growthOptions(state.players[state.playerId], state.season, syn.mods.growth[mySlot]);
+    state.phase = 'result';
+    delete state._showcase;
+    return ok(state, { result: state.seasonResult, growthOptions: state.growthOptions });
+  };
+
+  // 성장 선택 → 노화 → 다음 시즌 영입 또는 은퇴
+  A.chooseGrowth = function (state, index) {
+    if (state.phase !== 'result') return fail('결과 단계가 아닙니다');
+    var opt = state.growthOptions && state.growthOptions[index];
+    if (!opt) return fail('선택지가 없습니다');
+    var me = state.players[state.playerId];
+    G.applyGrowth(me, opt);
+    state.growthOptions = null;
+    var aging = [];
+    Object.keys(state.players).forEach(function (id) { var p = state.players[id]; aging.push({ id: id, name: p.name, age: p.age + 1, delta: G.ageOne(p) }); });
+    state.seasonResult = null;
+    if (state.season >= C.SEASONS) return ok(state, { retired: A.retire(state), aging: aging });
+    state.season += 1;
+    state.budget = C.DRAFT.rounds[state.draftRound - 1].budget + Math.floor(state.fame * C.SHOP.budgetPerFame);
+    A.openShop(state);
+    return ok(state, { aging: aging });
+  };
+
+  // 5.6 은퇴 — 통산 성적, 명예의 전당 점수, 로컬 랭킹 등재
+  A.retire = function (state) {
+    var me = state.players[state.playerId];
+    var score = SIM.hofScore(state.career);
+    var entry = { name: me.name, position: me.position, tags: me.tags.slice(), score: score, grade: SIM.hofGrade(score), hits: state.career.hits, hr: state.career.hr, rbi: state.career.rbi, titles: state.career.titles, champs: state.career.champs, date: new Date().toISOString().slice(0, 10) };
+    var rank = S.addRanking(entry);
+    state.hof = { score: score, grade: entry.grade, rankingPosition: rank, entry: entry };
+    state.phase = 'retired';
+    S.save(state);
+    return state.hof;
+  };
+  A.ranking = function () { return S.loadRanking(); };
+
+  AB.game = A;
+  if (typeof module !== 'undefined' && module.exports) module.exports = AB;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<!-- engine:end -->
+
+  <script>
+  // ── 6. 렌더: 화면별 렌더 함수
+  // ── 7. 입력: 드래그, 키보드, 패닉
+  // ── 8. 부팅
+  (function () {
+    'use strict';
+    var C = AB.C, S = AB.state, A = AB.game, SY = AB.synergy, G = AB.gen;
+    var app = document.getElementById('app');
+    var UI = {
+      state: null,
+      notice: '',          // 상단 안내 한 줄 (지명 결과, 노화 요약 등)
+      draft: { name: '', position: 'SS', tags: [] },
+      cursor: 0,           // 배치 화면 키보드 커서 (items 인덱스)
+      held: null,          // 집은 항목 {type:'slot', i} | {type:'bench', id}
+      drag: null,          // 마우스 드래그 중인 항목
+      preview: null,       // {target, diff}
+      gameLines: 0,        // 경기 로그 출력된 줄 수
+      gameTimer: null,
+      focusKey: null
+    };
+
+    // ── 유틸 ───────────────────────────────────────────────
+    function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function avg(v) { return (v || 0).toFixed(3).replace(/^0/, ''); }
+    function tagsHtml(p) { return '<span class="tags">' + p.tags.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') + '</span>'; }
+    function statsHtml(p, eff) {
+      return '<div class="stats">' + C.STATS.map(function (s) {
+        var v = p[s], e = eff ? eff[s] : v, cls = e > v ? 'up' : e < v ? 'down' : '';
+        return '<div><span class="lbl">' + C.STAT_LABEL[s] + '</span><b class="' + cls + '">' + e + (e !== v ? '<span class="small muted"> (' + v + ')</span>' : '') + '</b></div>';
+      }).join('') + '</div>';
+    }
+    function cardHtml(p, extra) {
+      return '<div class="pc"><span class="name">' + esc(p.name) + '</span><span class="meta">' + p.age + '세 · ' + p.position + '</span>' + tagsHtml(p) + '<span class="meta">연봉 ' + p.salary + '</span></div>' + statsHtml(p) + (extra || '');
+    }
+    function topbar(st) {
+      return '<div class="topbar"><h1>시즌 기록부</h1>' +
+        '<span><span class="k">시즌</span>' + st.season + ' / ' + C.SEASONS + '</span>' +
+        '<span><span class="k">명성</span>' + st.fame + '</span>' +
+        '<span><span class="k">연봉 총액</span>' + S.payroll(st) + ' / ' + st.budget + '</span>' +
+        '<span><span class="k">내 선수</span>' + esc(st.players[st.playerId].name) + ' ' + st.players[st.playerId].age + '세</span>' +
+        '<span class="muted small" style="margin-left:auto"><kbd>ESC</kbd> 문서 화면</span></div>' +
+        (UI.notice ? '<div class="notice" style="margin-bottom:12px">' + esc(UI.notice) + '</div>' : '');
+    }
+    function setFocus(key) { UI.focusKey = key; }
+    function render() {
+      var st = UI.state;
+      var html = '';
+      if (st.phase === 'draft') html = renderDraft(st);
+      else if (st.phase === 'shop') html = renderShop(st);
+      else if (st.phase === 'lineup') html = renderLineup(st);
+      else if (st.phase === 'game') html = renderGame(st);
+      else if (st.phase === 'result') html = renderResult(st);
+      else if (st.phase === 'retired') html = renderRetired(st);
+      app.innerHTML = html;
+      if (UI.focusKey) { var el = app.querySelector('[data-key="' + UI.focusKey + '"]'); if (el) el.focus(); UI.focusKey = null; }
+      else if (st.phase === 'lineup') { var cur = app.querySelector('.cursor'); if (cur) cur.focus(); }
+    }
+
+    // ── 5.1 드래프트 ───────────────────────────────────────
+    function renderDraft(st) {
+      var d = UI.draft, tags = d.tags;
+      var previewStats = tags.length === 2 ? G.draftStats(tags) : null;
+      return '<div class="topbar"><h1>시즌 기록부</h1><span class="muted">신인 등록</span><span class="muted small" style="margin-left:auto"><kbd>ESC</kbd> 문서 화면</span></div>' +
+        '<div class="stack">' +
+        '<div class="card stack"><h2>1. 이름</h2><input type="text" id="draft-name" maxlength="12" placeholder="' + esc(C.DEFAULT_PLAYER_NAME) + '" value="' + esc(d.name) + '"><p class="small muted">비워 두면 ' + esc(C.DEFAULT_PLAYER_NAME) + '</p></div>' +
+        '<div class="card stack"><h2>2. 포지션</h2><div class="choices">' + C.POSITIONS.map(function (p) { return '<button data-act="draft-pos" data-v="' + p + '" data-key="pos-' + p + '" class="' + (d.position === p ? 'on' : '') + '">' + p + '</button>'; }).join('') + '</div></div>' +
+        '<div class="card stack"><h2>3. 시작 태그 2개</h2><div class="choices">' + C.TAGS.map(function (t) { var on = tags.indexOf(t) >= 0; return '<button data-act="draft-tag" data-v="' + t + '" data-key="tag-' + t + '" class="' + (on ? 'on' : '') + '" ' + (!on && tags.length >= 2 ? 'disabled' : '') + '>' + t + '</button>'; }).join('') + '</div>' +
+        '<p class="small muted">주 능력치: 교타자·출루형→정확도, 거포·클러치→장타력, 발야구→주력, 수비형→수비, 베테랑→전체, 신예→성장률. 총 200점이 선택 태그 쪽으로 기울어 분배됩니다.</p>' +
+        (previewStats ? '<div class="alloc">' + C.STATS.map(function (s) { return '<div><span class="small muted">' + C.STAT_LABEL[s] + '</span><br><b>≈ ' + previewStats[s] + '</b></div>'; }).join('') + '</div>' : '') +
+        '</div>' +
+        '<div class="row"><button class="primary" data-act="draft-go" data-key="draft-go" ' + (tags.length === 2 ? '' : 'disabled') + '>지명받기</button><span class="small muted">1~5라운드 중 무작위 지명. 앞 라운드일수록 시작 예산·명성이 높습니다.</span></div>' +
+        '</div>';
+    }
+
+    // ── 5.2 영입 ───────────────────────────────────────────
+    function renderShop(st) {
+      var room = st.budget - S.payroll(st);
+      var roster = S.rosterIds(st).map(function (id) { return st.players[id]; });
+      return topbar(st) +
+        '<div class="stack">' +
+        '<div class="row"><h2>영입</h2><span class="muted small">남은 예산 <b class="' + (room < 0 ? 'bad' : '') + '">' + room + '</b></span>' +
+        '<button data-act="reroll" data-key="reroll" ' + (st.rerolls > 0 || room >= C.SHOP.extraRerollCost ? '' : 'disabled') + '>리롤 ' + (st.rerolls > 0 ? '(' + st.rerolls + '회 남음)' : '(예산 ' + C.SHOP.extraRerollCost + ')') + '</button>' +
+        '<button class="primary" data-act="to-lineup" data-key="to-lineup" style="margin-left:auto">배치로 →</button></div>' +
+        '<div class="cards">' + st.shop.map(function (p, i) {
+          var over = S.payroll(st) + p.salary > st.budget;
+          return '<div class="card">' + cardHtml(p) + '<div class="spacer"></div><button data-act="buy" data-v="' + i + '" data-key="buy-' + i + '" ' + (over ? 'disabled title="예산 초과"' : '') + '>' + (over ? '예산 초과' : '영입 (연봉 ' + p.salary + ')') + '</button></div>';
+        }).join('') + (st.shop.length ? '' : '<p class="muted">카드가 없습니다. 리롤하세요.</p>') + '</div>' +
+        '<div class="card stack"><div class="row"><h2>보유 선수 ' + roster.length + '명</h2><span class="muted small">방출 시 연봉의 50% 회수. 9명이 되어야 경기를 할 수 있습니다.</span></div>' +
+        '<div class="wrap"><table><tr><th>이름</th><th>나이</th><th>포지션</th><th>태그</th>' + C.STATS.map(function (s) { return '<th class="num">' + C.STAT_LABEL[s] + '</th>'; }).join('') + '<th class="num">연봉</th><th></th></tr>' +
+        roster.map(function (p) {
+          return '<tr><td>' + esc(p.name) + (p.isPlayer ? ' <span class="accent">(나)</span>' : '') + '</td><td>' + p.age + '</td><td>' + p.position + '</td><td>' + tagsHtml(p) + '</td>' + C.STATS.map(function (s) { return '<td class="num">' + p[s] + '</td>'; }).join('') + '<td class="num">' + p.salary + '</td><td>' + (p.isPlayer ? '' : '<button data-act="release" data-v="' + p.id + '" data-key="rel-' + p.id + '" class="small">방출 (+' + Math.floor(p.salary * C.SHOP.releaseRefund) + ')</button>') + '</td></tr>';
+        }).join('') + '</table></div></div>' +
+        '</div>';
+    }
+
+    // ── 5.3 배치 ───────────────────────────────────────────
+    function lineupItems(st) {
+      var items = [];
+      for (var i = 0; i < C.LINEUP_SIZE; i++) items.push({ type: 'slot', i: i });
+      items.push({ type: 'zone' });
+      st.bench.forEach(function (id) { items.push({ type: 'bench', id: id }); });
+      return items;
+    }
+    function itemKey(it) { return it.type === 'slot' ? 'slot-' + it.i : it.type === 'zone' ? 'zone' : 'bench-' + it.id; }
+    function sameItem(a, b) { return !!a && !!b && itemKey(a) === itemKey(b); }
+    // 집은 항목을 대상에 놓을 때의 가상 라인업. 불가능하면 null
+    function virtualLineup(st, src, dst) {
+      var l = S.lineupPlayers(st);
+      if (src.type === 'slot' && dst.type === 'slot') return src.i === dst.i ? null : SY.swapped(l, src.i, dst.i);
+      if (src.type === 'bench' && dst.type === 'slot') return SY.placed(l, dst.i, st.players[src.id]);
+      if (src.type === 'slot' && (dst.type === 'zone' || dst.type === 'bench')) {
+        if (st.lineup[src.i] == null || st.players[st.lineup[src.i]].isPlayer) return null;
+        if (dst.type === 'bench') return SY.placed(l, src.i, st.players[dst.id]);
+        return SY.placed(l, src.i, null);
+      }
+      return null;
+    }
+    function applyMove(st, src, dst) {
+      var r = null;
+      if (src.type === 'slot' && dst.type === 'slot') r = A.swapSlots(st, src.i, dst.i);
+      else if (src.type === 'bench' && dst.type === 'slot') r = A.benchToSlot(st, src.id, dst.i);
+      else if (src.type === 'slot' && dst.type === 'zone') r = A.slotToBench(st, src.i);
+      else if (src.type === 'slot' && dst.type === 'bench') r = A.benchToSlot(st, dst.id, src.i);
+      if (r && !r.ok) UI.notice = r.error;
+      return r;
+    }
+    function synergyPanelHtml(st) {
+      var cur = A.evaluate(st);
+      var html = '<div class="cleanup-meter">3·4·5번 장타력 합 <b class="' + (cur.cleanupActive ? 'good' : '') + '">' + cur.cleanupPower + '</b> / ' + C.CLEANUP.threshold + (cur.cleanupActive ? ' <span class="good">클린업 트리오 발동</span>' : '') + '</div>';
+      var pv = UI.preview;
+      if (pv && pv.diff) {
+        var d = pv.diff;
+        html += '<h3 style="margin-top:8px">놓으면 이렇게 됩니다</h3><div class="syn-list">';
+        if (!d.added.length && !d.removed.length && !d.upgraded.length && !d.downgraded.length) html += '<span class="muted small">시너지 변화 없음</span>';
+        d.added.forEach(function (s) { html += '<div class="item add"><span class="n">' + esc(s.name) + '</span><span class="d">' + esc(s.desc) + '</span></div>'; });
+        d.upgraded.forEach(function (u) { html += '<div class="item add"><span class="n">' + esc(u.from.name) + ' → ' + esc(u.to.name) + '</span><span class="d">' + esc(u.to.desc) + '</span></div>'; });
+        d.downgraded.forEach(function (u) { html += '<div class="item rem"><span class="n">' + esc(u.from.name) + ' → ' + esc(u.to.name) + '</span><span class="d">' + esc(u.to.desc) + '</span></div>'; });
+        d.removed.forEach(function (s) { html += '<div class="item rem"><span class="n">' + esc(s.name) + '</span><span class="d">' + esc(s.desc) + '</span></div>'; });
+        html += '</div><h3 style="margin-top:10px">현재</h3>';
+      }
+      html += '<div class="syn-list">' + (cur.synergies.length ? cur.synergies.map(function (s) { return '<div class="item"><span class="n">' + esc(s.name) + '</span><span class="d">' + esc(s.desc) + '</span></div>'; }).join('') : '<span class="muted small">발동 중인 시너지 없음. 연속 3칸 같은 태그(런), 같은 태그 3명 다른 포지션(세트), 앞뒤 조합을 노려 보세요.</span>') + '</div>';
+      return html;
+    }
+    function renderLineup(st) {
+      var items = lineupItems(st);
+      if (UI.cursor >= items.length) UI.cursor = items.length - 1;
+      var cur = items[UI.cursor];
+      var ev = A.evaluate(st);
+      var dragSrc = UI.held || UI.drag;
+      var over = UI.preview ? UI.preview.target : null;
+      function cls(it, base) {
+        var c = base;
+        if (sameItem(it, cur)) c += ' cursor';
+        if (dragSrc && sameItem(it, dragSrc)) c += ' held';
+        if (over && sameItem(it, over)) c += ' over';
+        return c;
+      }
+      var slots = st.lineup.map(function (id, i) {
+        var p = id == null ? null : st.players[id];
+        var it = { type: 'slot', i: i };
+        var c = cls(it, 'slot' + (p ? '' : ' empty') + (p && p.isPlayer ? ' me' : '') + (C.CLEANUP.slots.indexOf(i) >= 0 ? ' cleanup' : ''));
+        var body = p ? '<div><div><span class="name">' + esc(p.name) + '</span> <span class="muted small">' + p.age + '세 · ' + p.position + '</span> ' + tagsHtml(p) + '</div><div class="mini">' + C.STATS.map(function (s) { var e = ev.effective[i][s]; return '<span>' + C.STAT_LABEL[s].slice(0, 2) + ' <b class="' + (e > p[s] ? 'good' : '') + '">' + e + '</b></span>'; }).join('') + '</div></div>' : '<div>빈 칸 — 벤치에서 끌어오거나 <kbd>Space</kbd>로 놓기</div>';
+        return '<div class="' + c + '" tabindex="0" data-item="slot-' + i + '" data-key="slot-' + i + '" ' + (p ? 'draggable="true"' : '') + '><span class="no">' + (i + 1) + '번</span>' + body + '<span class="muted small">' + (p && !p.isPlayer ? '' : '') + '</span></div>';
+      }).join('');
+      var bench = st.bench.map(function (id) {
+        var p = st.players[id], it = { type: 'bench', id: id };
+        return '<div class="' + cls(it, 'bench-item') + '" tabindex="0" data-item="bench-' + id + '" data-key="bench-' + id + '" draggable="true"><div><span class="name">' + esc(p.name) + '</span> <span class="muted small">' + p.age + '세 · ' + p.position + '</span> ' + tagsHtml(p) + '<div class="mini small muted">' + C.STATS.map(function (s) { return C.STAT_LABEL[s].slice(0, 2) + ' ' + p[s]; }).join(' · ') + '</div></div></div>';
+      }).join('');
+      var zone = '<div class="' + cls({ type: 'zone' }, 'bench-zone') + '" tabindex="0" data-item="zone" data-key="zone">여기에 놓으면 벤치로</div>';
+      return topbar(st) +
+        '<div class="row" style="margin-bottom:10px"><h2>타순 배치</h2><span class="small muted">드래그로 칸 스왑 · 벤치↔라인업 교체. 키보드: <kbd>↑</kbd><kbd>↓</kbd> 이동, <kbd>←</kbd><kbd>→</kbd> 열 전환, <kbd>Space</kbd> 집기/놓기</span>' +
+        '<span style="margin-left:auto" class="row"><button data-act="to-shop" data-key="to-shop">← 영입으로</button><button class="primary" data-act="start" data-key="start" ' + (A.canStart(st) ? '' : 'disabled') + '>경기 시작</button></span></div>' +
+        '<div class="lineup-grid"><div class="slots">' + slots + '</div>' +
+        '<div class="stack"><div class="card" id="synergy">' + synergyPanelHtml(st) + '</div>' +
+        '<div class="card stack"><h3>벤치 ' + st.bench.length + '명</h3>' + zone + '<div class="bench">' + bench + '</div></div></div></div>';
+    }
+    function updateSynergyPanel() { var el = document.getElementById('synergy'); if (el) el.innerHTML = synergyPanelHtml(UI.state); }
+    function setPreview(target) {
+      var src = UI.held || UI.drag;
+      if (!src || !target) { UI.preview = null; return; }
+      var v = virtualLineup(UI.state, src, target);
+      UI.preview = { target: target, diff: v ? SY.preview(S.lineupPlayers(UI.state), v) : null };
+    }
+    function parseItem(key) {
+      if (!key) return null;
+      if (key === 'zone') return { type: 'zone' };
+      if (key.indexOf('slot-') === 0) return { type: 'slot', i: parseInt(key.slice(5), 10) };
+      if (key.indexOf('bench-') === 0) return { type: 'bench', id: key.slice(6) };
+      return null;
+    }
+
+    // ── 5.4 경기 ───────────────────────────────────────────
+    function logLineHtml(line) {
+      var cls = /시너지 \[/.test(line) ? 'syn' : /^── /.test(line) ? 'end' : /상대 팀/.test(line) ? 'opp' : '';
+      return '<div class="' + cls + '">' + esc(line) + '</div>';
+    }
+    function renderGame(st) {
+      var log = st.gameResult.log, done = UI.gameLines >= log.length;
+      return topbar(st) +
+        '<div class="row" style="margin-bottom:10px"><h2>' + st.season + '시즌 경기</h2><span class="small muted">발동 시너지 ' + st.gameResult.synergies.length + '개 · <kbd>Space</kbd> 빠르게</span>' +
+        '<span style="margin-left:auto" class="row">' + (done ? '<button class="primary" data-act="finish" data-key="finish">시즌 결과 보기</button>' : '<button data-act="fast" data-key="fast">빠르게</button>') + '</span></div>' +
+        '<div class="card log" id="log">' + log.slice(0, UI.gameLines).map(logLineHtml).join('') + '</div>';
+    }
+    function tickGame() {
+      var st = UI.state; if (st.phase !== 'game') return;
+      var log = st.gameResult.log;
+      if (UI.gameLines < log.length) {
+        UI.gameLines++;
+        var el = document.getElementById('log');
+        if (el) { el.insertAdjacentHTML('beforeend', logLineHtml(log[UI.gameLines - 1])); }
+        if (UI.gameLines < log.length) { UI.gameTimer = setTimeout(tickGame, 150); return; }
+      }
+      UI.gameTimer = null; setFocus('finish'); render();
+    }
+    function fastForward() { if (UI.gameTimer) clearTimeout(UI.gameTimer); UI.gameTimer = null; UI.gameLines = UI.state.gameResult.log.length; setFocus('finish'); render(); }
+
+    // ── 5.5 결과 ───────────────────────────────────────────
+    function renderResult(st) {
+      var r = st.seasonResult, m = r.mine, me = st.players[st.playerId];
+      return topbar(st) +
+        '<div class="stack">' +
+        '<div class="row"><h2>' + r.season + '시즌 결과</h2>' + (r.champion ? '<span class="good">우승</span>' : '') + '</div>' +
+        '<div class="lineup-grid">' +
+        '<div class="card stack"><h3>팀</h3><div class="kv"><span class="k">순위</span><span><b>' + r.rank + '위</b> / ' + C.SEASON.teams + '팀</span><span class="k">성적</span><span>' + r.wins + '승 ' + r.losses + '패</span><span class="k">득실</span><span>경기당 ' + r.runsFor.toFixed(2) + ' 득점 / ' + r.runsAgainst.toFixed(2) + ' 실점</span><span class="k">명성</span><span>+' + r.fameGain + ' → ' + st.fame + '</span></div></div>' +
+        '<div class="card stack"><h3>' + esc(me.name) + ' (' + me.age + '세, ' + me.position + ')</h3><div class="kv"><span class="k">타율</span><span><b>' + avg(m.avg) + '</b> <span class="muted small">(' + m.h + '안타 / ' + m.ab + '타수)</span></span><span class="k">홈런</span><span>' + m.hr + '</span><span class="k">타점</span><span>' + m.rbi + '</span><span class="k">도루</span><span>' + m.sb + '</span><span class="k">타이틀</span><span>' + (r.titles.length ? '<b class="accent">' + r.titles.join(' · ') + '</b>' : '<span class="muted">없음</span>') + '</span></div>' +
+        '<p class="small muted">리그 선두: 타율 ' + avg(r.leaders.avg) + ' · 홈런 ' + r.leaders.hr + ' · 타점 ' + r.leaders.rbi + ' · 도루 ' + r.leaders.sb + '</p></div>' +
+        '</div>' +
+        '<div class="card stack"><h3>라인업 시즌 성적</h3><div class="wrap"><table><tr><th>타순</th><th>이름</th><th class="num">타율</th><th class="num">홈런</th><th class="num">타점</th><th class="num">도루</th></tr>' +
+        r.team.map(function (p, i) { var pl = st.players[st.lineup[i]]; return '<tr><td>' + (i + 1) + '</td><td>' + esc(pl ? pl.name : '?') + (pl && pl.isPlayer ? ' <span class="accent">(나)</span>' : '') + '</td><td class="num">' + avg(p.avg) + '</td><td class="num">' + p.hr + '</td><td class="num">' + p.rbi + '</td><td class="num">' + p.sb + '</td></tr>'; }).join('') + '</table></div></div>' +
+        '<div class="card stack"><h2>성장 선택</h2><p class="small muted">하나를 고르면 전 선수 나이 +1. 27세가 피크, 이후 매년 하락(28~30세 −2, 31~33세 −4, 34세+ −7).</p><div class="growth">' +
+        st.growthOptions.map(function (o, i) { return '<button data-act="grow" data-v="' + i + '" data-key="grow-' + i + '"><span class="key">' + (i + 1) + '</span>' + esc(o.label) + '</button>'; }).join('') +
+        '</div></div></div>';
+    }
+
+    // ── 5.6 은퇴 ───────────────────────────────────────────
+    function renderRetired(st) {
+      var c = st.career, h = st.hof, me = st.players[st.playerId], rank = A.ranking();
+      return '<div class="topbar"><h1>시즌 기록부</h1><span class="muted">은퇴</span><span class="muted small" style="margin-left:auto"><kbd>ESC</kbd> 문서 화면</span></div>' +
+        '<div class="stack">' +
+        '<div class="row"><h2>' + esc(me.name) + ' 통산 성적</h2><span class="muted small">' + me.position + ' · ' + me.tags.join(', ') + ' · ' + (me.age - C.SEASONS) + '세 데뷔, ' + me.age + '세 은퇴</span></div>' +
+        '<div class="card"><div class="wrap"><table><tr><th>시즌</th><th>나이</th><th class="num">타율</th><th class="num">안타</th><th class="num">홈런</th><th class="num">타점</th><th class="num">도루</th><th>팀</th><th>타이틀</th></tr>' +
+        c.seasons.map(function (s) { return '<tr><td>' + s.season + '</td><td>' + s.age + '</td><td class="num">' + avg(s.avg) + '</td><td class="num">' + s.h + '</td><td class="num">' + s.hr + '</td><td class="num">' + s.rbi + '</td><td class="num">' + s.sb + '</td><td>' + s.rank + '위 ' + s.wins + '승' + (s.champion ? ' <span class="good">우승</span>' : '') + '</td><td>' + s.titles.join(' ') + '</td></tr>'; }).join('') +
+        '<tr><th>통산</th><th></th><th class="num">' + avg(c.avg) + '</th><th class="num">' + c.hits + '</th><th class="num">' + c.hr + '</th><th class="num">' + c.rbi + '</th><th class="num">' + c.sb + '</th><th>우승 ' + c.champs + '회</th><th>' + c.titles + '개</th></tr></table></div></div>' +
+        '<div class="lineup-grid"><div class="card stack"><h3>명예의 전당</h3><div class="kv"><span class="k">점수</span><span><b style="font-size:20px">' + h.score + '</b></span><span class="k">판정</span><span><b class="' + (h.grade === '미달' ? 'muted' : 'accent') + '">' + esc(h.grade) + '</b></span><span class="k">계산</span><span class="small muted">안타 ' + c.hits + '×1 + 홈런 ' + c.hr + '×4 + 타점 ' + c.rbi + '×2 + 타이틀 ' + c.titles + '×150 + 우승 ' + c.champs + '×300</span></div>' +
+        '<p class="small muted">' + C.HOF.grades.slice(0, 3).map(function (g) { return g.name + ' ' + g.min + '+'; }).join(' · ') + '</p></div>' +
+        '<div class="card stack"><h3>로컬 랭킹</h3><div class="wrap"><table><tr><th>#</th><th>이름</th><th class="num">점수</th><th>판정</th><th>날짜</th></tr>' +
+        rank.map(function (e, i) { var mine = h.entry && e.name === h.entry.name && e.score === h.entry.score && e.date === h.entry.date; return '<tr' + (mine ? ' class="accent"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(e.name) + '</td><td class="num">' + e.score + '</td><td>' + esc(e.grade) + '</td><td class="muted small">' + esc(e.date || '') + '</td></tr>'; }).join('') + '</table></div></div></div>' +
+        '<div class="row"><button class="primary" data-act="new" data-key="new">새 커리어 시작</button></div></div>';
+    }
+
+    // ── 액션 처리 ──────────────────────────────────────────
+    function act(name, v) {
+      var st = UI.state, r;
+      UI.notice = '';
+      if (name === 'draft-pos') { UI.draft.position = v; UI.draft.name = (document.getElementById('draft-name') || {}).value || ''; setFocus('pos-' + v); }
+      else if (name === 'draft-tag') { var t = UI.draft.tags, i = t.indexOf(v); if (i >= 0) t.splice(i, 1); else if (t.length < 2) t.push(v); UI.draft.name = (document.getElementById('draft-name') || {}).value || ''; setFocus('tag-' + v); }
+      else if (name === 'draft-go') {
+        UI.draft.name = (document.getElementById('draft-name') || {}).value || '';
+        r = A.draft(st, UI.draft);
+        if (r.ok) { UI.notice = r.round.round + '라운드 지명 — 시작 예산 ' + r.round.budget + ', 명성 ' + r.round.fame + '. 8명을 영입해 9칸을 채우세요.'; setFocus('buy-0'); }
+        else UI.notice = r.error;
+      }
+      else if (name === 'reroll') { r = A.reroll(st); if (!r.ok) UI.notice = r.error; setFocus('reroll'); }
+      else if (name === 'buy') { r = A.buy(st, parseInt(v, 10)); if (!r.ok) UI.notice = r.error; setFocus('buy-0'); }
+      else if (name === 'release') { r = A.release(st, v); UI.notice = r.ok ? '방출 — 예산 +' + r.refund : r.error; setFocus('to-lineup'); }
+      else if (name === 'to-lineup') { r = A.openLineup(st); UI.cursor = 0; UI.held = null; UI.preview = null; if (!r.ok) UI.notice = r.error; }
+      else if (name === 'to-shop') { r = A.backToShop(st); UI.held = null; UI.preview = null; setFocus('to-lineup'); if (!r.ok) UI.notice = r.error; }
+      else if (name === 'start') { r = A.startGame(st); if (r.ok) { UI.gameLines = 0; UI.held = null; UI.preview = null; render(); UI.gameTimer = setTimeout(tickGame, 150); return; } UI.notice = r.error; }
+      else if (name === 'fast') { fastForward(); return; }
+      else if (name === 'finish') { r = A.finishGame(st); if (!r.ok) UI.notice = r.error; setFocus('grow-0'); }
+      else if (name === 'grow') {
+        r = A.chooseGrowth(st, parseInt(v, 10));
+        if (r.ok) {
+          var declined = (r.aging || []).filter(function (a) { return a.delta < 0; });
+          UI.notice = st.phase === 'retired' ? '' : '시즌 ' + st.season + ' — 노화: ' + (declined.length ? declined.map(function (a) { return a.name + ' ' + a.delta; }).join(', ') : '하락한 선수 없음') + '. 예산 ' + st.budget;
+          setFocus(st.phase === 'retired' ? 'new' : 'buy-0');
+        } else UI.notice = r.error;
+      }
+      else if (name === 'new') { S.clear(); UI.state = A.newGame(); UI.draft = { name: '', position: 'SS', tags: [] }; UI.notice = ''; }
+      render();
+    }
+    app.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+      act(b.getAttribute('data-act'), b.getAttribute('data-v'));
+    });
+
+    // ── 드래그 앤 드롭 ─────────────────────────────────────
+    app.addEventListener('dragstart', function (e) {
+      var el = e.target.closest('[data-item]'); if (!el || UI.state.phase !== 'lineup') return;
+      UI.drag = parseItem(el.getAttribute('data-item')); UI.held = null; UI.preview = null;
+      e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', el.getAttribute('data-item')); } catch (x) { /* noop */ }
+      el.classList.add('held');
+    });
+    app.addEventListener('dragover', function (e) {
+      if (!UI.drag) return;
+      var el = e.target.closest('[data-item]'); if (!el) return;
+      e.preventDefault();
+      var target = parseItem(el.getAttribute('data-item'));
+      if (!UI.preview || !sameItem(UI.preview.target, target)) {
+        var prev = app.querySelector('.over'); if (prev) prev.classList.remove('over');
+        el.classList.add('over');
+        setPreview(target); updateSynergyPanel();
+      }
+    });
+    app.addEventListener('dragleave', function (e) {
+      var el = e.target.closest('[data-item]'); if (el && !el.contains(e.relatedTarget)) { el.classList.remove('over'); }
+    });
+    app.addEventListener('drop', function (e) {
+      if (!UI.drag) return;
+      e.preventDefault();
+      var el = e.target.closest('[data-item]'); var src = UI.drag; UI.drag = null; UI.preview = null;
+      if (el) { var dst = parseItem(el.getAttribute('data-item')); applyMove(UI.state, src, dst); var items = lineupItems(UI.state); items.forEach(function (it, i) { if (sameItem(it, dst)) UI.cursor = i; }); }
+      render();
+    });
+    app.addEventListener('dragend', function () { if (UI.drag) { UI.drag = null; UI.preview = null; render(); } });
+
+    // ── 키보드 ─────────────────────────────────────────────
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); togglePanic(); return; }
+      if (panicOn) return;
+      var st = UI.state; if (!st) return;
+      var tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input') return;
+      if (st.phase === 'game' && e.key === ' ') { e.preventDefault(); if (UI.gameLines < st.gameResult.log.length) fastForward(); return; }
+      if (st.phase === 'result' && /^[1-3]$/.test(e.key)) { var idx = parseInt(e.key, 10) - 1; if (st.growthOptions[idx]) { e.preventDefault(); act('grow', String(idx)); } return; }
+      if (st.phase !== 'lineup') return;
+      if (tag === 'button') return; // 버튼(경기 시작 등)에 포커스가 있으면 격자 키 처리는 건너뛴다
+      var items = lineupItems(st), cur = items[UI.cursor];
+      // 클릭/탭으로 포커스가 옮겨졌으면 커서를 따라간다
+      var focused = document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('data-item');
+      if (focused) { items.forEach(function (it, i) { if (itemKey(it) === focused) UI.cursor = i; }); cur = items[UI.cursor]; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        var inSlots = cur.type === 'slot';
+        var dir = e.key === 'ArrowDown' ? 1 : -1, n = UI.cursor + dir;
+        if (inSlots) { if (n < 0 || n >= C.LINEUP_SIZE) return; }
+        else { if (n < C.LINEUP_SIZE || n >= items.length) return; }
+        UI.cursor = n;
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (cur.type === 'slot' && e.key === 'ArrowRight') UI.cursor = C.LINEUP_SIZE; // 벤치 존으로
+        else if (cur.type !== 'slot' && e.key === 'ArrowLeft') UI.cursor = Math.min(C.LINEUP_SIZE - 1, Math.max(0, UI.cursor - C.LINEUP_SIZE));
+        else return;
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        var target = items[UI.cursor];
+        if (!UI.held) {
+          if (target.type === 'zone' || (target.type === 'slot' && st.lineup[target.i] == null)) return;
+          UI.held = target;
+        } else if (sameItem(UI.held, target)) { UI.held = null; }
+        else { var src = UI.held; UI.held = null; UI.preview = null; applyMove(st, src, target); render(); return; }
+      } else return;
+      if (UI.held) setPreview(items[UI.cursor]); else UI.preview = null;
+      render();
+    });
+
+    // ── 패닉 모드 ──────────────────────────────────────────
+    var panicOn = false, panicEl = document.getElementById('panic');
+    var normalTitle = document.title, normalIcon = document.getElementById('favicon').href;
+    var docIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='3' y='2' width='10' height='12' fill='%232b579a'/%3E%3Crect x='5' y='5' width='6' height='1' fill='%23fff'/%3E%3Crect x='5' y='7' width='6' height='1' fill='%23fff'/%3E%3Crect x='5' y='9' width='4' height='1' fill='%23fff'/%3E%3C/svg%3E";
+    function panicDoc() {
+      var para = [
+        '분산 시스템에서 일관성(consistency)은 여러 복제본이 같은 데이터에 대해 어떤 순서와 시점으로 갱신을 관측하는지를 규정하는 계약이다. 강한 일관성은 모든 읽기가 가장 최근의 쓰기를 반영함을 보장하지만, 네트워크 분할이 발생하면 가용성을 희생해야 한다. 이 절에서는 선형화 가능성(linearizability), 순차 일관성(sequential consistency), 인과 일관성(causal consistency), 최종 일관성(eventual consistency)의 정의를 차례로 살펴보고, 각 모델이 허용하는 실행 이력의 예를 든다.',
+        '선형화 가능성은 각 연산이 호출과 응답 사이의 어느 한 시점에 원자적으로 수행된 것처럼 보여야 한다는 조건이다. 실시간 순서를 보존한다는 점에서 순차 일관성보다 강하며, 구현에는 일반적으로 합의(consensus) 프로토콜이 필요하다. Paxos와 Raft가 대표적이며, 두 프로토콜 모두 과반수 정족수를 이용해 단일 리더가 로그 순서를 결정한다.',
+        '순차 일관성은 모든 프로세스가 동일한 전역 순서를 관측하되 그 순서가 실시간과 일치할 필요는 없다는 조건이다. 각 프로세스의 프로그램 순서는 보존되어야 한다. 이 모델은 공유 메모리 멀티프로세서의 메모리 모델을 설명할 때 처음 제안되었으며, 분산 저장소에서는 비교적 드물게 채택된다.',
+        '인과 일관성은 인과적으로 관련된 쓰기만 순서를 보장한다. 두 쓰기가 동시(concurrent)라면 서로 다른 복제본이 서로 다른 순서로 관측해도 무방하다. 벡터 시계(vector clock)나 버전 벡터로 인과 관계를 추적하며, 지리적으로 분산된 데이터베이스가 분할 상황에서도 쓰기를 계속 받아들일 수 있게 한다.',
+        '최종 일관성은 새로운 갱신이 더 이상 없다면 모든 복제본이 결국 같은 값으로 수렴한다는 약한 보장이다. 수렴까지의 시간에 대한 상한은 제공하지 않는다. 충돌 해소를 위해 마지막 쓰기 우선(LWW), 다중 버전 반환, CRDT 같은 기법이 쓰인다. 특히 CRDT는 병합 연산이 교환·결합·멱등 법칙을 만족하도록 자료구조를 설계해 조정 없이 수렴을 보장한다.',
+        'CAP 정리는 분할(Partition)이 발생했을 때 일관성(Consistency)과 가용성(Availability) 중 하나를 포기해야 함을 말한다. 흔한 오해와 달리 셋 중 둘을 항상 선택하는 것이 아니라, 분할이 없는 정상 상황에서는 지연(latency)과 일관성 사이의 트레이드오프가 더 실질적이며 이를 PACELC 모델이 설명한다.',
+        '실무에서는 하나의 시스템 안에서도 데이터 종류에 따라 서로 다른 모델을 조합한다. 예를 들어 계정 잔액은 선형화 가능성을 요구하지만 활동 피드는 최종 일관성으로 충분하다. 요구 사항을 명세할 때는 읽기 자체 쓰기(read-your-writes), 단조 읽기(monotonic reads), 단조 쓰기(monotonic writes) 같은 세션 보장을 명시하는 것이 유용하다.'
+      ];
+      var h = '<div class="doc"><h1>3장. 분산 시스템의 일관성 모델</h1><p class="sub">강의 노트 · 3주차 · 마지막 수정 ' + new Date().toISOString().slice(0, 10) + '</p>';
+      h += '<h2>3.1 개요</h2><p>' + para[0] + '</p><p>' + para[5] + '</p>';
+      h += '<h2>3.2 강한 일관성 모델</h2><p>' + para[1] + '</p><p>' + para[2] + '</p>';
+      h += '<h2>3.3 약한 일관성 모델</h2><p>' + para[3] + '</p><p>' + para[4] + '</p>';
+      h += '<h2>3.4 설계 지침</h2><p>' + para[6] + '</p><ul><li>데이터 항목별로 요구되는 최소 보장을 표로 정리한다.</li><li>분할 시 동작(거부/수락 후 조정)을 명시한다.</li><li>클라이언트 세션 보장을 API 계약에 포함한다.</li></ul>';
+      h += '<h2>3.5 연습 문제</h2><p>1. 선형화 가능하지만 순차 일관성을 위반하는 이력이 존재하는가? 이유를 설명하라.</p><p>2. 두 복제본이 동시 쓰기를 받았을 때 LWW와 CRDT 카운터의 결과를 비교하라.</p><p>3. 읽기 자체 쓰기 보장을 최종 일관성 저장소 위에서 구현하는 방법을 제시하라.</p>';
+      for (var i = 0; i < 3; i++) h += '<h2>부록 ' + String.fromCharCode(65 + i) + '. 보충 설명</h2><p>' + para[(i + 1) % para.length] + '</p><p>' + para[(i + 4) % para.length] + '</p>';
+      return h + '</div>';
+    }
+    function togglePanic(force) {
+      var on = force === undefined ? !panicOn : !!force;
+      if (on === panicOn) return;
+      panicOn = on;
+      if (on) {
+        if (!panicEl.innerHTML) panicEl.innerHTML = panicDoc();
+        panicEl.hidden = false; app.hidden = true;
+        document.title = '3장_일관성모델.docx - 문서'; document.getElementById('favicon').href = docIcon;
+        panicEl.scrollTop = 0;
+      } else {
+        panicEl.hidden = true; app.hidden = false;
+        document.title = normalTitle; document.getElementById('favicon').href = normalIcon;
+        var cur = app.querySelector('.cursor') || app.querySelector('[data-key]'); if (cur) cur.focus();
+      }
+    }
+    document.addEventListener('visibilitychange', function () { if (document.hidden) togglePanic(true); });
+
+    // ── 8. 부팅 ────────────────────────────────────────────
+    UI.state = A.resume() || A.newGame();
+    if (UI.state.phase === 'game') UI.gameLines = UI.state.gameResult.log.length; // 경기 중 새로고침 → 전체 로그
+    render();
+  })();
+  </script>
+</body>
+</html>
