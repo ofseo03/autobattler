@@ -21,7 +21,7 @@ function cardValue(state, card, mode) {
 
 function shopPhase(state, mode) {
   var guard = 0;
-  while (state.phase === 'shop' && guard++ < 40) {
+  while (state.phase === 'shop' && guard++ < 120) {
     var roster = S.rosterIds(state).length;
     var room = state.budget - S.payroll(state);
     // 노쇠 선수 방출 (smart)
@@ -59,11 +59,10 @@ function shopPhase(state, mode) {
       var cheapest = -1;
       state.shop.forEach(function (c, i) { if (c.salary <= room && (cheapest < 0 || c.salary < state.shop[cheapest].salary)) cheapest = i; });
       if (cheapest >= 0) { A.buy(state, cheapest); continue; }
-      if (state.rerolls === 0 && room < C.SHOP.extraRerollCost) {
-        // 최후: 가장 비싼 벤치 선수 방출
-        var ids2 = state.bench.slice().sort(function (a, b) { return state.players[b].salary - state.players[a].salary; });
-        if (ids2.length) { A.release(state, ids2[0]); continue; }
-      }
+      // 최후: 가장 비싼 선수(내 선수 제외) 방출 → 예산 확보 후 계속
+      var ids2 = S.rosterIds(state).filter(function (id) { return !state.players[id].isPlayer; }).sort(function (a, b) { return state.players[b].salary - state.players[a].salary; });
+      if (ids2.length && state.players[ids2[0]].salary > 1) { A.release(state, ids2[0]); continue; }
+      if (state.rerolls === 0 && room >= C.SHOP.extraRerollCost) { A.reroll(state); continue; }
       break;
     }
     break;
