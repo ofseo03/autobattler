@@ -184,20 +184,20 @@
     startAge: 21, rookieAge: 19, veteranAge: 25,
     roundWeights: [0.15, 0.2, 0.3, 0.2, 0.15],
     rounds: [
-      { round: 1, budget: 52, fame: 50 },
-      { round: 2, budget: 49, fame: 40 },
-      { round: 3, budget: 46, fame: 30 },
-      { round: 4, budget: 44, fame: 22 },
-      { round: 5, budget: 42, fame: 15 }
+      { round: 1, budget: 56, fame: 50 },
+      { round: 2, budget: 53, fame: 40 },
+      { round: 3, budget: 50, fame: 30 },
+      { round: 4, budget: 48, fame: 22 },
+      { round: 5, budget: 46, fame: 15 }
     ]
   };
 
   // 5.2 영입
-  C.SHOP = { cards: 5, rerolls: 2, extraRerollCost: 3, releaseRefund: 0.5, budgetPerFame: 1 / 6 };
+  C.SHOP = { cards: 5, rerolls: 2, extraRerollCost: 3, releaseRefund: 0.5, budgetPerFame: 1 / 5 };
 
   // 카드 생성 — 명성 → 카드 품질
   C.CARD = {
-    baseQuality: 43, qualityPerFame: 0.12, qualitySd: 7, qualityMin: 32, qualityMax: 84,
+    baseQuality: 45, qualityPerFame: 0.13, qualitySd: 7, qualityMin: 32, qualityMax: 84,
     statSd: 11, tagStatBonus: 10, statMin: 20, statMax: 99,
     salaryPerPoint: 0.4, salaryBase: 38, salaryMin: 1,
     rookieAge: [20, 24], veteranAge: [31, 36], normalAge: [23, 31]
@@ -207,9 +207,9 @@
   C.SEASON = {
     games: 144, teams: 10,
     leagueGrowth: 0.01,         // 시즌당 상대 전력 상승
-    fameStrength: 0.0006,       // 명성 1당 상대 전력 +0.08% (유명해질수록 상대도 강해진다)
-    otherTeamSd: 0.075,         // 다른 9팀 승률 편차
-    oppRunsBase: 3.1,           // 상대 평균 득점 (수비 55 기준)
+    fameStrength: 0.0003,       // 명성 1당 상대 전력 +0.08% (유명해질수록 상대도 강해진다)
+    otherTeamSd: 0.065,         // 다른 9팀 승률 편차
+    oppRunsBase: 2.95,          // 상대 평균 득점 (수비 55 기준)
     defenseFactor: 0.006,       // 수비 1점당 상대 득점 -0.6%
     simSamples: 60,             // 시즌 추정에 쓰는 빠른 시뮬 횟수
     showcaseWeight: 0.05,       // 관전 경기 결과 반영 비율
